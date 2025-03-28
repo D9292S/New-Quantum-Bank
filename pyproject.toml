@@ -1,0 +1,17 @@
+[project]
+name = "quantum-bank1"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "coloredlogs>=15.0.1",
+    "expiringdict>=1.2.2",
+    "motor>=3.7.0",
+    "pillow>=11.1.0",
+    "py-cord>=2.6.1",
+    "pymongo>=4.11.3",
+    "python-dotenv>=1.1.0",
+    "requests>=2.32.3",
+    "structlog>=25.2.0",
+]
