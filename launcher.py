@@ -600,8 +600,8 @@ def display_error(message: str, exit_code: Optional[int] = None) -> None:
 def run_bot() -> int:
     """Run the bot - synchronous entry point"""
     # Check Python version
-    if sys.version_info < (3, 10):
-        display_error("Python 3.10 or higher is required.", 1)
+    if sys.version_info < (3, 12):
+        display_error("Python 3.12 or higher is required.", 1)
         return 1
 
     # Parse command line arguments

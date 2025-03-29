@@ -1,7 +1,7 @@
 #####################
 # BUILDER STAGE
 #####################
-FROM python:3.9-slim AS builder
+FROM python:3.12-slim as builder
 
 WORKDIR /app
 
@@ -18,12 +18,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install --no-cache-dir uv
 
 # Install dependencies using uv
-RUN uv pip install -e ".[high-performance]" --system
+RUN pip install uv && \
+    uv pip install ".[high-performance]" --system
 
 #####################
 # FINAL STAGE
 #####################
-FROM python:3.9-slim
+FROM python:3.12-slim
 
 LABEL maintainer="Quantum Bank Team" \
       description="A Discord economy bot with advanced banking features"
@@ -31,7 +32,7 @@ LABEL maintainer="Quantum Bank Team" \
 WORKDIR /app
 
 # Copy installed packages from builder stage
-COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code
@@ -53,7 +54,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Set up healthcheck
 HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:$PORT/health') if 'PORT' in os.environ else exit(0)" || exit 1
+    CMD python -c "import requests, os; requests.get('http://localhost:' + os.environ.get('PORT', '8080') + '/health') if 'PORT' in os.environ else exit(0)" || exit 1
 
 # Use an entrypoint script for more flexibility
 ENTRYPOINT ["python", "launcher.py"]
