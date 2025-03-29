@@ -20,8 +20,14 @@ class TestMongoDBConnection(unittest.TestCase):
         self.env_patcher.start()
         
         # Import modules after environment setup
-        from cogs.mongo import MongoDB
-        self.mongo_class = MongoDB
+        from cogs.mongo import Database
+        self.mongo_class = Database
+        
+        # Create a mock bot with config
+        self.mock_bot = mock.MagicMock()
+        self.mock_bot.config = mock.MagicMock()
+        self.mock_bot.config.MONGO_URI = 'mongodb://localhost:27017'
+        self.mock_bot.loop = asyncio.get_event_loop()
     
     def tearDown(self):
         """Clean up after tests."""
@@ -29,7 +35,7 @@ class TestMongoDBConnection(unittest.TestCase):
     
     def test_mongodb_instance_creation(self):
         """Test that MongoDB class can be instantiated."""
-        mongodb = self.mongo_class(None)  # None as bot parameter
+        mongodb = self.mongo_class(self.mock_bot)  # Use mock_bot instead of None
         self.assertIsNotNone(mongodb)
     
     @unittest.skip("Skip actual connection test unless running with real MongoDB")
@@ -39,7 +45,7 @@ class TestMongoDBConnection(unittest.TestCase):
         # Remove the skip decorator to run this test with a local MongoDB
         
         async def run_test():
-            mongodb = self.mongo_class(None)
+            mongodb = self.mongo_class(self.mock_bot)  # Use mock_bot instead of None
             await mongodb._force_connection()
             return await mongodb.check_connection()
         
@@ -59,9 +65,9 @@ class TestMongoDBConnection(unittest.TestCase):
         ]
         
         for uri in test_cases:
-            with mock.patch.dict('os.environ', {'MONGODB_URI': uri}):
-                mongodb = self.mongo_class(None)
-                self.assertEqual(mongodb.uri, uri)
+            self.mock_bot.config.MONGO_URI = uri
+            mongodb = self.mongo_class(self.mock_bot)  # Use mock_bot instead of None
+            self.assertEqual(mongodb.mongo_uri, uri)
 
 if __name__ == '__main__':
     unittest.main() 

@@ -1,0 +1,50 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * 1'  # Run weekly on Mondays
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit safety
+    
+    - name: Run Bandit security scan
+      run: |
+        bandit -r . -x ./tests,./.venv -f json -o bandit-results.json || true
+    
+    - name: Check for vulnerabilities in dependencies
+      run: |
+        safety check
+    
+    - name: Upload bandit scan results
+      uses: actions/upload-artifact@v3
+      with:
+        name: bandit-results
+        path: bandit-results.json
+        retention-days: 5
+        
+    - name: Check scan results
+      run: |
+        if [[ -s bandit-results.json ]]; then
+          echo "Security issues found. See the uploaded artifact for details."
+          cat bandit-results.json | jq '.results[] | {filename: .filename, issue: .issue_text}'
+          exit 0  # Don't fail the build yet, just report
+        else
+          echo "No security issues found."
+        fi 

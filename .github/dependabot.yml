@@ -1,0 +1,29 @@
+version: 2
+updates:
+  # Maintain dependencies for Python packages
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "automerge"
+    # Group all dependencies updates into a single PR
+    groups:
+      development-dependencies:
+        patterns:
+          - "*"
+    # Allow up to 5 updates
+    versioning-strategy: auto
+
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "automerge" 

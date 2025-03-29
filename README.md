@@ -2,15 +2,51 @@
 
 Quantum Bank is a feature-rich Discord economy bot with advanced banking features, built using Discord.py and MongoDB.
 
+![Quantum Bank Banner](images/quantum_bank_banner.png)
+
 ## Features
 
-- 🏦 Complete banking system with accounts, transactions, and interest
-- 💹 Advanced economy features including investments and stock market simulation
-- 🎮 Economy-based minigames and activities
-- 🔒 Secure transactions with detailed logging
-- 📊 User-friendly statistics and leaderboards
-- 🎨 Colorful console logs with JSON formatting
-- 🔄 Seamless MongoDB integration for reliable data storage
+- 🏦 **Complete banking system** with accounts, transactions, and interest
+- 💰 **Multiple account types** (Savings, Checking, Fixed Deposits)
+- 💳 **Credit system** with credit scores and loan management
+- 💹 **Advanced economy features** including investments and stock market simulation
+- 🎮 **Economy-based minigames** and activities
+- 🔒 **Secure transactions** with detailed logging
+- 📊 **User-friendly statistics** and leaderboards
+- 🎨 **Colorful console logs** with JSON formatting
+- 🔄 **Seamless MongoDB integration** for reliable data storage
+- ⚡ **High performance design** with sharding and clustering support
+
+## Command Examples
+
+### Account Management
+```
+/account create - Create a new bank account
+/account balance - Check your current balance
+/account statement - View your recent transactions
+/account close - Close your bank account
+```
+
+### Transactions
+```
+/deposit <amount> - Deposit funds into your account
+/withdraw <amount> - Withdraw funds from your account
+/transfer <user> <amount> - Transfer funds to another user
+```
+
+### Loans and Credit
+```
+/loan apply <amount> <duration> - Apply for a loan
+/loan repay <amount> - Make a payment towards your loan
+/credit score - Check your credit score
+```
+
+### Investments
+```
+/invest <amount> <stock> - Invest in a stock
+/portfolio - View your investment portfolio
+/market - View current market conditions
+```
 
 ## Prerequisites
 
@@ -49,8 +85,10 @@ Quantum Bank is a feature-rich Discord economy bot with advanced banking feature
 4. Create a `.env` file in the root directory with the following variables:
    ```
    BOT_TOKEN=your_discord_bot_token
-   MONGODB_URI=your_mongodb_connection_string
-   MONGODB_DB_NAME=your_database_name
+   MONGO_URI=your_mongodb_connection_string
+   MAL_CLIENT_ID=your_myanimelist_client_id  # Optional, for anime commands
+   ACTIVITY_STATUS=Quantum Bank | /help  # Custom status
+   DEBUG=false  # Set to true for debug mode
    ```
 
 5. Run the bot:
@@ -58,17 +96,55 @@ Quantum Bank is a feature-rich Discord economy bot with advanced banking feature
    python launcher.py
    ```
 
-## Configuration
+## Advanced Configuration
 
-You can configure various aspects of the bot by modifying the appropriate values in your `.env` file:
+Quantum Bank supports advanced configuration options for scaling and performance:
 
-- `BOT_TOKEN`: Your Discord bot token
-- `MONGODB_URI`: MongoDB connection string
-- `MONGODB_DB_NAME`: Name of your MongoDB database
-- `DEBUG_MODE`: Set to `True` to enable debug logging (default: `False`)
-- `PERFORMANCE_MODE`: Set to `HIGH`, `MEDIUM`, or `LOW` (default: `MEDIUM`)
-- `SHARD_COUNT`: Number of shards to use (default: `1`)
-- `CLUSTER_ID`: Cluster ID for multi-process setups (default: `0`)
+```bash
+# Run with specific performance mode
+python launcher.py --performance high
+
+# Run with specific logging level
+python launcher.py --log-level verbose
+
+# Run with sharding configuration
+python launcher.py --shards 3
+
+# Run as part of a cluster 
+python launcher.py --cluster 0 --clusters 3
+```
+
+You can also configure these options via environment variables in your `.env` file:
+
+```
+BOT_TOKEN=your_discord_bot_token
+MONGO_URI=mongodb://username:password@host:port/dbname
+DEBUG=false
+PERFORMANCE_MODE=medium  # Options: low, medium, high
+SHARD_COUNT=1
+```
+
+## Deployment
+
+### Docker Deployment
+```bash
+# Build the Docker image
+docker build -t quantum-bank .
+
+# Run the container
+docker run -d \
+  --name quantum-bank \
+  --restart unless-stopped \
+  -e BOT_TOKEN=your_token \
+  -e MONGO_URI=your_mongodb_uri \
+  quantum-bank
+```
+
+### VPS/Dedicated Server
+For production use, we recommend:
+- A VPS with at least 1GB RAM
+- Setting up a systemd service for auto-restart
+- Using a monitoring solution like PM2
 
 ## Contributing
 
