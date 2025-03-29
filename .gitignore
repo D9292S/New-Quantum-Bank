@@ -6,7 +6,7 @@
 .env.production.local
 
 #Important files
-quantum_bank_command_reference.txt
+quantum_bank_command_reference
 
 # Python cache files
 __pycache__/
