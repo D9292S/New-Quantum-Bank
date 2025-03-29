@@ -11,7 +11,9 @@ from urllib.parse import quote_plus
 
 import discord
 from dotenv import load_dotenv
+
 import bot
+from config import BotConfig, ConfigurationError
 
 
 # Define color codes for log levels
@@ -43,7 +45,11 @@ class ColoredFormatter(logging.Formatter):
             # Shorten Gateway logs
             (
                 r"has connected to Gateway:.*\(Session ID: ([^)]+)\)",
-                lambda m: f"has connected to Gateway: {self.COLORS['BOLD']}{self.COLORS['GREEN']}✓{self.COLORS['RESET']} (Session ID: {self.COLORS['BOLD']}{self.COLORS['LIGHT_YELLOW']}{m.group(1)[:8]}...{self.COLORS['RESET']})",
+                lambda m: (
+                    f"has connected to Gateway: {self.COLORS['BOLD']}{self.COLORS['GREEN']}✓"
+                    f"{self.COLORS['RESET']} (Session ID: {self.COLORS['BOLD']}"
+                    f"{self.COLORS['LIGHT_YELLOW']}{m.group(1)[:8]}...{self.COLORS['RESET']})"
+                ),
             ),
             # Shorten command registrations
             (
@@ -53,12 +59,19 @@ class ColoredFormatter(logging.Formatter):
             # Shorten cog loading completion
             (
                 r'Finished loading cogs extra=.+?"elapsed_time": "([^"]+)".+?',
-                lambda m: f"Finished loading all cogs in {self.COLORS['BOLD']}{self.COLORS['GREEN']}{m.group(1)}{self.COLORS['RESET']}",
+                lambda m: (
+                    f"Finished loading all cogs in {self.COLORS['BOLD']}"
+                    f"{self.COLORS['GREEN']}{m.group(1)}{self.COLORS['RESET']}"
+                ),
             ),
             # Shorten connection metrics
             (
                 r"Connected to (\d+) guilds with (\d+) members",
-                lambda m: f"Connected to {self.COLORS['BOLD']}{self.COLORS['CYAN']}{m.group(1)}{self.COLORS['RESET']} guilds with {self.COLORS['BOLD']}{self.COLORS['CYAN']}{m.group(2)}{self.COLORS['RESET']} members",
+                lambda m: (
+                    f"Connected to {self.COLORS['BOLD']}{self.COLORS['CYAN']}{m.group(1)}"
+                    f"{self.COLORS['RESET']} guilds with {self.COLORS['BOLD']}"
+                    f"{self.COLORS['CYAN']}{m.group(2)}{self.COLORS['RESET']} members"
+                ),
             ),
         ]
 
@@ -147,11 +160,23 @@ class ColoredFormatter(logging.Formatter):
             message = re.sub(r'"([^"]+)":', f'{self.COLORS["CYAN"]}"\\1"{self.COLORS["RESET"]}:', message)
 
             # Format string values in light green
-            message = re.sub(r": '([^']*)'", f": {self.COLORS['LIGHT_GREEN']}'\\1'{self.COLORS['RESET']}", message)
-            message = re.sub(r': "([^"]*)"', f': {self.COLORS["LIGHT_GREEN"]}"\\1"{self.COLORS["RESET"]}', message)
+            message = re.sub(
+                r": '([^']*)'",
+                f": {self.COLORS['LIGHT_GREEN']}'\\1'{self.COLORS['RESET']}",
+                message,
+            )
+            message = re.sub(
+                r': "([^"]*)"',
+                f': {self.COLORS["LIGHT_GREEN"]}"\\1"{self.COLORS["RESET"]}',
+                message,
+            )
 
             # Format numeric values in yellow
-            message = re.sub(r": (\d+\.?\d*)", f": {self.COLORS['LIGHT_YELLOW']}\\1{self.COLORS['RESET']}", message)
+            message = re.sub(
+                r": (\d+\.?\d*)",
+                f": {self.COLORS['LIGHT_YELLOW']}\\1{self.COLORS['RESET']}",
+                message,
+            )
 
             # Format special values
             message = re.sub(
@@ -188,21 +213,24 @@ def setup_logging(log_level="normal"):
         console_level = logging.DEBUG
         use_filter = False
         print(
-            f"{ColoredFormatter.COLORS['BLUE']}Debug logging enabled - showing all logs with debug information{ColoredFormatter.COLORS['RESET']}"
+            f"{ColoredFormatter.COLORS['BLUE']}Debug logging enabled - "
+            f"showing all logs with debug information{ColoredFormatter.COLORS['RESET']}"
         )
     elif log_level == "verbose":
         root_logger.setLevel(logging.INFO)
         console_level = logging.INFO
         use_filter = False
         print(
-            f"{ColoredFormatter.COLORS['GREEN']}Verbose logging enabled - showing all logs{ColoredFormatter.COLORS['RESET']}"
+            f"{ColoredFormatter.COLORS['GREEN']}Verbose logging enabled - "
+            f"showing all logs{ColoredFormatter.COLORS['RESET']}"
         )
     elif log_level == "quiet":
         root_logger.setLevel(logging.INFO)  # Still log everything to files
         console_level = logging.WARNING  # But only show warnings and above in console
         use_filter = True
         print(
-            f"{ColoredFormatter.COLORS['YELLOW']}Quiet logging enabled - showing only warnings and errors{ColoredFormatter.COLORS['RESET']}"
+            f"{ColoredFormatter.COLORS['YELLOW']}Quiet logging enabled - "
+            f"showing only warnings and errors{ColoredFormatter.COLORS['RESET']}"
         )
     else:  # normal - default
         root_logger.setLevel(logging.INFO)
@@ -392,6 +420,71 @@ __version__ = "1.0.0"
 load_dotenv()
 
 
+def validate_env_variables():
+    """Validate environment variables and display warnings/errors as needed"""
+    warnings = []
+    errors = []
+    
+    # Check required variables
+    if not os.getenv("BOT_TOKEN"):
+        errors.append("BOT_TOKEN is required but not set")
+    
+    # Check MongoDB connection info
+    if not os.getenv("MONGO_URI"):
+        if not all(key in os.environ for key in ["MONGO_USER", "MONGO_PASS", "MONGO_HOST"]):
+            warnings.append("Neither MONGO_URI nor all components (MONGO_USER, MONGO_PASS, MONGO_HOST) are set. Database features will be limited.")
+    
+    # Validate performance mode if set
+    if performance_mode := os.getenv("PERFORMANCE_MODE"):
+        if performance_mode.lower() not in ["low", "medium", "high"]:
+            warnings.append(f"Invalid PERFORMANCE_MODE: '{performance_mode}'. Must be one of: low, medium, high. Using 'medium' as default.")
+    
+    # Validate log level if set
+    if log_level := os.getenv("LOG_LEVEL"):
+        if log_level.lower() not in ["quiet", "normal", "verbose", "debug"]:
+            warnings.append(f"Invalid LOG_LEVEL: '{log_level}'. Must be one of: quiet, normal, verbose, debug. Using 'normal' as default.")
+    
+    # Validate numeric values
+    for var_name, var_desc in [
+        ("SHARD_COUNT", "number of shards"),
+        ("CLUSTER_ID", "cluster ID"),
+        ("TOTAL_CLUSTERS", "total clusters")
+    ]:
+        if var_value := os.getenv(var_name):
+            try:
+                int(var_value)
+            except ValueError:
+                warnings.append(f"Invalid {var_desc} '{var_value}': must be an integer.")
+    
+    # Check for consistency in cluster configuration
+    if os.getenv("CLUSTER_ID") and not os.getenv("TOTAL_CLUSTERS"):
+        warnings.append("CLUSTER_ID is set but TOTAL_CLUSTERS is missing. Clustering may not work correctly.")
+    
+    # Display warnings
+    COLORS = ColoredFormatter.COLORS
+    if warnings:
+        print(f"\n{COLORS['YELLOW']}{'=' * 80}{COLORS['RESET']}")
+        print(f"{COLORS['BOLD']}{COLORS['YELLOW']}⚠️  Environment Configuration Warnings:{COLORS['RESET']}")
+        for warning in warnings:
+            print(f"{COLORS['YELLOW']}  • {warning}{COLORS['RESET']}")
+        print(f"{COLORS['YELLOW']}{'=' * 80}{COLORS['RESET']}\n")
+    
+    # Display errors and exit if any
+    if errors:
+        print(f"\n{COLORS['RED']}{'=' * 80}{COLORS['RESET']}")
+        print(f"{COLORS['BOLD']}{COLORS['RED']}❌ Environment Configuration Errors:{COLORS['RESET']}")
+        for error in errors:
+            print(f"{COLORS['RED']}  • {error}{COLORS['RESET']}")
+        print(f"{COLORS['RED']}{'=' * 80}{COLORS['RESET']}\n")
+        print(f"{COLORS['YELLOW']}Please check your .env file or environment variables and try again.{COLORS['RESET']}")
+        sys.exit(1)
+    
+    if not warnings and not errors:
+        print(f"{COLORS['GREEN']}✓ Environment configuration validated successfully{COLORS['RESET']}")
+    
+    return True
+
+
 # Function to print a cool banner with version info
 def print_banner():
     # ANSI color codes
@@ -404,7 +497,7 @@ def print_banner():
 {COLORS["GREEN"]} ██║▄▄ ██║██║   ██║██╔══██║██║╚██╗██║   ██║   ██║   ██║██║╚██╔╝██║{COLORS["RESET"]}
 {COLORS["YELLOW"]} ╚██████╔╝╚██████╔╝██║  ██║██║ ╚████║   ██║   ╚██████╔╝██║ ╚═╝ ██║{COLORS["RESET"]}
 {COLORS["YELLOW"]}  ╚══▀▀═╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝{COLORS["RESET"]}
-                                                                  
+
 {COLORS["BOLD"]}{COLORS["GREEN"]}               ██████╗  █████╗ ███╗   ██╗██╗  ██╗{COLORS["RESET"]}
 {COLORS["BOLD"]}{COLORS["GREEN"]}               ██╔══██╗██╔══██╗████╗  ██║██║ ██╔╝{COLORS["RESET"]}
 {COLORS["BOLD"]}{COLORS["GREEN"]}               ██████╔╝███████║██╔██╗ ██║█████╔╝ {COLORS["RESET"]}
@@ -423,28 +516,20 @@ def print_banner():
     print(f"{COLORS['GRAY']}─────────────────────────────────────────────────────────────{COLORS['RESET']}")
 
 
-print_banner()
+# Don't call print_banner() at module level - it will be called in run_bot()
 
-Config = namedtuple(
-    "Config",
-    [
-        "DEBUG",
-        "BOT_TOKEN",
-        "MONGO_URI",
-        "MAL_CLIENT_ID",
-        "ACTIVITY_STATUS",
-        "SHARD_COUNT",
-        "SHARD_IDS",
-        "CLUSTER_ID",
-        "TOTAL_CLUSTERS",
-        "PERFORMANCE_MODE",
-    ],
-)
+def validate_env_variables():
+    """Validate environment variables and display warnings/errors as needed"""
+    # ... rest of validate_env_variables function ...
 
+# Don't call validate_env_variables() at module level - it will be called in run_bot()
 
 def parse_arguments():
     """Parse command line arguments for advanced configuration"""
-    parser = argparse.ArgumentParser(description="Quantum Bank Discord Bot")
+    parser = argparse.ArgumentParser(
+        description="Quantum Bank Discord Bot - A feature-rich Discord economy bot with advanced banking features",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     parser.add_argument("--shards", type=int, help="Number of shards to use")
     parser.add_argument("--shardids", type=str, help="Comma-separated list of shard IDs to run")
@@ -461,6 +546,10 @@ def parse_arguments():
         choices=["quiet", "normal", "verbose", "debug"],
         default="normal",
         help="Logging verbosity (quiet: critical logs only, normal: balanced, verbose: all logs, debug: all logs with debugging info)",
+    )
+    parser.add_argument(
+        "--version", "-v", action="store_true", 
+        help="Show version information and exit"
     )
 
     return parser.parse_args()
@@ -505,30 +594,39 @@ def run_bot():
     # Check Python version
     if sys.version_info < (3, 8):
         display_error("Python 3.8 or higher is required.", 1)
+        return 1
+
+    # Parse command line arguments
+    args = parse_arguments()
+    
+    # Handle --version flag
+    if hasattr(args, 'version') and args.version:
+        print(f"Quantum Bank Bot v{__version__}")
+        return 0
 
     # Set up proper event loop for Windows
     if os.name == "nt":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-    # Parse command line arguments
-    args = parse_arguments()
+    # Print the banner
+    print_banner()
+    
+    # Validate environment variables
+    validate_env_variables()
 
     # Initialize logging with selected verbosity
     global LOG_CATEGORIES
     LOG_CATEGORIES = setup_logging(args.log_level)
 
-    # Determine debug mode from args or env
-    debug_mode = args.debug or os.getenv("DEBUG") in ("1", "True", "true")
-    if debug_mode:
-        print(f"{ColoredFormatter.COLORS['YELLOW']}Debug mode enabled{ColoredFormatter.COLORS['RESET']}")
-
-    # Construct Mongo URI with error handling
+    # Use the new BotConfig class instead of the namedtuple
     try:
-        uri = os.getenv("MONGO_URI")
-        if not uri:
-            # Try to construct from components
+        # Create and validate config using both env vars and command-line args
+        config = BotConfig.from_env(args)
+        
+        # Construct Mongo URI if not provided but components are available
+        if not config.mongo_uri:
             if all(key in os.environ for key in ["MONGO_USER", "MONGO_PASS", "MONGO_HOST"]):
-                uri = "mongodb://{}:{}@{}".format(
+                config.mongo_uri = "mongodb://{}:{}@{}".format(
                     quote_plus(os.environ["MONGO_USER"]),
                     quote_plus(os.environ["MONGO_PASS"]),
                     os.environ["MONGO_HOST"],
@@ -536,39 +634,25 @@ def run_bot():
                 print(
                     f"{ColoredFormatter.COLORS['GREEN']}Constructed MongoDB URI from individual components{ColoredFormatter.COLORS['RESET']}"
                 )
-            else:
-                print(
-                    f"{ColoredFormatter.COLORS['YELLOW']}WARNING: MongoDB URI not provided, some features may not work{ColoredFormatter.COLORS['RESET']}"
-                )
-                uri = None
-    except KeyError as e:
-        display_error(f"Missing required MongoDB environment variable: {e}")
-        uri = None
+    except ConfigurationError as e:
+        display_error(f"Configuration error: {e}", 1)
+        return 1
+    except ValueError as e:
+        display_error(f"Invalid configuration value: {e}", 1)
+        return 1
 
-    # Sharding configuration
-    total_shards = args.shards or int(os.getenv("SHARD_COUNT", "1"))
-
-    # Determine shard IDs to run
-    shard_ids = None
-    if args.shardids:
-        # Parse comma-separated list of shard IDs
-        shard_ids = [int(s.strip()) for s in args.shardids.split(",")]
-        print(
-            f"{ColoredFormatter.COLORS['BLUE']}Running specific shards: {ColoredFormatter.COLORS['BOLD']}{shard_ids}{ColoredFormatter.COLORS['RESET']}"
+    # Calculate shard IDs for this cluster if needed
+    if config.is_clustered and config.shard_count > 1 and not config.shard_ids:
+        config.shard_ids = calculate_shards_for_cluster(
+            config.cluster_id, config.total_clusters, config.shard_count
         )
-    elif args.cluster is not None and args.clusters is not None:
-        # Calculate shard IDs for this cluster
-        cluster_id = args.cluster
-        total_clusters = args.clusters
-        shard_ids = calculate_shards_for_cluster(cluster_id, total_clusters, total_shards)
         print(
-            f"{ColoredFormatter.COLORS['BLUE']}Cluster {ColoredFormatter.COLORS['BOLD']}{cluster_id}/{total_clusters}{ColoredFormatter.COLORS['RESET']} {ColoredFormatter.COLORS['BLUE']}running shards: {ColoredFormatter.COLORS['BOLD']}{shard_ids}{ColoredFormatter.COLORS['RESET']}"
+            f"{ColoredFormatter.COLORS['BLUE']}Cluster {ColoredFormatter.COLORS['BOLD']}{config.cluster_id}/{config.total_clusters}{ColoredFormatter.COLORS['RESET']} "
+            f"{ColoredFormatter.COLORS['BLUE']}running shards: {ColoredFormatter.COLORS['BOLD']}{config.shard_ids}{ColoredFormatter.COLORS['RESET']}"
         )
 
     # Performance mode configuration
-    performance_mode = args.performance or os.getenv("PERFORMANCE_MODE", "medium")
-
-    if performance_mode == "high":
+    if config.performance_mode == "high":
         print(
             f"{ColoredFormatter.COLORS['GREEN']}Using {ColoredFormatter.COLORS['BOLD']}HIGH{ColoredFormatter.COLORS['RESET']} {ColoredFormatter.COLORS['GREEN']}performance mode - maximizing resource usage{ColoredFormatter.COLORS['RESET']}"
         )
@@ -590,6 +674,7 @@ def run_bot():
         # Try to use orjson for faster JSON processing
         try:
             import importlib.util
+
             if importlib.util.find_spec("orjson"):
                 print(
                     f"{ColoredFormatter.COLORS['GREEN']}✓ Using orjson for improved JSON performance{ColoredFormatter.COLORS['RESET']}"
@@ -599,7 +684,7 @@ def run_bot():
                 f"{ColoredFormatter.COLORS['YELLOW']}✗ orjson not available - using standard json module{ColoredFormatter.COLORS['RESET']}"
             )
 
-    elif performance_mode == "low":
+    elif config.performance_mode == "low":
         print(
             f"{ColoredFormatter.COLORS['BLUE']}Using {ColoredFormatter.COLORS['BOLD']}LOW{ColoredFormatter.COLORS['RESET']} {ColoredFormatter.COLORS['BLUE']}performance mode - minimizing resource usage{ColoredFormatter.COLORS['RESET']}"
         )
@@ -609,46 +694,29 @@ def run_bot():
             f"{ColoredFormatter.COLORS['BLUE']}Using {ColoredFormatter.COLORS['BOLD']}MEDIUM{ColoredFormatter.COLORS['RESET']} {ColoredFormatter.COLORS['BLUE']}performance mode - balanced resource usage{ColoredFormatter.COLORS['RESET']}"
         )
 
-    # Create config
-    config = Config(
-        DEBUG=debug_mode,
-        BOT_TOKEN=os.getenv("BOT_TOKEN"),
-        MONGO_URI=uri,
-        MAL_CLIENT_ID=os.getenv("MAL_CLIENT_ID"),
-        ACTIVITY_STATUS=os.getenv("ACTIVITY_STATUS", "Quantum Bank | /help"),
-        SHARD_COUNT=total_shards,
-        SHARD_IDS=shard_ids,
-        CLUSTER_ID=args.cluster,
-        TOTAL_CLUSTERS=args.clusters,
-        PERFORMANCE_MODE=performance_mode,
-    )
-
     # Print configuration summary
-    if config.DEBUG:
+    summary = config.summary()
+    if summary["debug"]:
         print(f"{ColoredFormatter.COLORS['YELLOW']}DEBUG mode enabled{ColoredFormatter.COLORS['RESET']}")
 
-    if config.SHARD_COUNT > 1:
+    if summary["shard_count"] > 1:
         print(
-            f"{ColoredFormatter.COLORS['BLUE']}Bot will use {ColoredFormatter.COLORS['BOLD']}{config.SHARD_COUNT}{ColoredFormatter.COLORS['RESET']} {ColoredFormatter.COLORS['BLUE']}shards{ColoredFormatter.COLORS['RESET']}"
+            f"{ColoredFormatter.COLORS['BLUE']}Bot will use {ColoredFormatter.COLORS['BOLD']}{summary['shard_count']}{ColoredFormatter.COLORS['RESET']} {ColoredFormatter.COLORS['BLUE']}shards{ColoredFormatter.COLORS['RESET']}"
         )
-        if config.SHARD_IDS:
+        if summary["shard_ids"]:
             print(
-                f"{ColoredFormatter.COLORS['BLUE']}This instance will run shards: {ColoredFormatter.COLORS['BOLD']}{config.SHARD_IDS}{ColoredFormatter.COLORS['RESET']}"
+                f"{ColoredFormatter.COLORS['BLUE']}This instance will run shards: {ColoredFormatter.COLORS['BOLD']}{summary['shard_ids']}{ColoredFormatter.COLORS['RESET']}"
             )
 
-    if config.CLUSTER_ID is not None:
+    if summary["is_clustered"]:
         print(
-            f"{ColoredFormatter.COLORS['BLUE']}Running as cluster {ColoredFormatter.COLORS['BOLD']}{config.CLUSTER_ID}{ColoredFormatter.COLORS['RESET']} {ColoredFormatter.COLORS['BLUE']}of {ColoredFormatter.COLORS['BOLD']}{config.TOTAL_CLUSTERS}{ColoredFormatter.COLORS['RESET']}"
+            f"{ColoredFormatter.COLORS['BLUE']}Running as cluster {ColoredFormatter.COLORS['BOLD']}{summary['cluster_id']}{ColoredFormatter.COLORS['RESET']} {ColoredFormatter.COLORS['BLUE']}of {ColoredFormatter.COLORS['BOLD']}{summary['total_clusters']}{ColoredFormatter.COLORS['RESET']}"
         )
 
-    if not config.MAL_CLIENT_ID:
+    if not summary["mal_client_id_set"]:
         print(
             f"{ColoredFormatter.COLORS['YELLOW']}WARNING: MAL_CLIENT_ID not set, anime commands will be disabled{ColoredFormatter.COLORS['RESET']}"
         )
-
-    # Check for required BOT_TOKEN
-    if not config.BOT_TOKEN:
-        display_error("BOT_TOKEN must be set in .env\nPlease create a .env file with BOT_TOKEN=your_token_here", 1)
 
     # Set up intents
     try:
@@ -660,11 +728,11 @@ def run_bot():
 
         # Create bot instance with sharding configuration
         bot_instance = bot.ClusterBot(
-            token=config.BOT_TOKEN,
+            token=config.bot_token,
             intents=intents,
             config=config,
-            shard_count=config.SHARD_COUNT,
-            shard_ids=config.SHARD_IDS,
+            shard_count=config.shard_count,
+            shard_ids=config.shard_ids,
         )
 
         # Make sure appropriate cogs are loaded
@@ -672,7 +740,7 @@ def run_bot():
         initial_cogs = ["mongo", "accounts"]
 
         # Add performance monitoring cog if not in low performance mode
-        if config.PERFORMANCE_MODE != "low":
+        if config.performance_mode != "low":
             initial_cogs.append("performance_monitor")
             initial_cogs.append("admin_performance")
 
@@ -692,8 +760,12 @@ def run_bot():
         bot_instance.run()
     except Exception as e:
         display_error(f"Failed to start bot: {e}", 1)
+        return 1
+
+    # Return success if we get here
+    return 0
 
 
 if __name__ == "__main__":
     # Run the bot without asyncio.run() since discord.py creates its own event loop
-    run_bot()
+    sys.exit(run_bot())

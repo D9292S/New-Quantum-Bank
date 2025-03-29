@@ -31,7 +31,12 @@ class ShardManager:
         self._lock = asyncio.Lock()
 
         # Metrics
-        self._metrics = {"events_sent": 0, "events_received": 0, "health_checks": 0, "start_time": time.time()}
+        self._metrics = {
+            "events_sent": 0,
+            "events_received": 0,
+            "health_checks": 0,
+            "start_time": time.time(),
+        }
 
         # Performance metrics
         self._process = psutil.Process()

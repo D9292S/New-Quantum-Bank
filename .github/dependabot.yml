@@ -26,4 +26,4 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
-      - "automerge" 
+      - "automerge"

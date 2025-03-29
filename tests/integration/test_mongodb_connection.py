@@ -4,10 +4,14 @@ import sys
 import unittest
 from unittest import mock
 
+import pytest
+
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 
+@pytest.mark.integration
+@pytest.mark.database
 class TestMongoDBConnection(unittest.TestCase):
     """Integration tests for MongoDB connection functionality."""
 
@@ -33,9 +37,16 @@ class TestMongoDBConnection(unittest.TestCase):
         self.loop = asyncio.new_event_loop()
         self.mock_bot.loop = self.loop
 
+        # Create a patch for the performance monitoring coroutine
+        self.perf_monitor_patcher = mock.patch.object(
+            Database, "_run_performance_monitoring", new_callable=mock.AsyncMock
+        )
+        self.perf_monitor_mock = self.perf_monitor_patcher.start()
+
     def tearDown(self):
         """Clean up after tests."""
         self.env_patcher.stop()
+        self.perf_monitor_patcher.stop()
         self.loop.close()
 
     def test_mongodb_instance_creation(self):

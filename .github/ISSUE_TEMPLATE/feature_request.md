@@ -20,4 +20,4 @@ A clear and concise description of any alternative solutions or features you've 
 Explain why this feature would be useful to most users of the bot.
 
 **Additional context**
-Add any other context or screenshots about the feature request here. 
+Add any other context or screenshots about the feature request here.

@@ -12,16 +12,16 @@ repos:
     -   id: debug-statements
 
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.292
+    rev: v0.11.2
     hooks:
     -   id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
+        args: [--fix]
 
 -   repo: https://github.com/psf/black
-    rev: 23.9.1
+    rev: 25.1.0
     hooks:
     -   id: black
-        language_version: python3.9
+        language_version: python3.12
 
 -   repo: https://github.com/pycqa/isort
     rev: 5.12.0
@@ -40,7 +40,7 @@ repos:
     rev: 1.6.1
     hooks:
     -   id: poetry-check
-      
+
 -   repo: local
     hooks:
     -   id: python-no-print
@@ -48,4 +48,4 @@ repos:
         description: "Check for inappropriate print statements (use logging instead)"
         entry: "[^_]print\\s*\\("
         language: pygrep
-        types: [python] 
+        types: [python]

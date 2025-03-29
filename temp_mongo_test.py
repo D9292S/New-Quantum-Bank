@@ -169,7 +169,11 @@ class DatabaseTester:
         for collection_name in collections_to_test:
             try:
                 print(f"Testing write to {collection_name}...")
-                test_doc = {"test_id": f"test_{int(time.time())}", "timestamp": time.time(), "test": True}
+                test_doc = {
+                    "test_id": f"test_{int(time.time())}",
+                    "timestamp": time.time(),
+                    "test": True,
+                }
 
                 result = await self.db[collection_name].insert_one(test_doc)
                 print(f"Successfully wrote to {collection_name}, inserted id: {result.inserted_id}")

@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Main bot service
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quantum-bank-bot
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+    env_file:
+      - .env
+    environment:
+      - PERFORMANCE_MODE=medium
+      - LOG_LEVEL=normal
+    depends_on:
+      - mongodb
+    networks:
+      - bot-network
+
+  # MongoDB service
+  mongodb:
+    image: mongo:5.0
+    container_name: quantum-bank-mongodb
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASS}
+      - MONGO_INITDB_DATABASE=quantum_bank
+    volumes:
+      - mongodb-data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "'db.runCommand(\"ping\").ok'", "localhost:27017/admin", "-u", "${MONGO_USER}", "-p", "${MONGO_PASS}", "--quiet"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - bot-network
+
+  # Optional Redis for caching and shared state (useful for clustered deployments)
+  redis:
+    image: redis:7-alpine
+    container_name: quantum-bank-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - bot-network
+
+volumes:
+  mongodb-data:
+  redis-data:
+
+networks:
+  bot-network:
+    driver: bridge
+
+# Profiles for different deployment scenarios
+# Example: docker-compose --profile dev up
+# Example: docker-compose --profile prod up
+profiles:
+  - dev   # MongoDB, Redis, single bot instance
+  - prod  # MongoDB, Redis, clustered bot instances 

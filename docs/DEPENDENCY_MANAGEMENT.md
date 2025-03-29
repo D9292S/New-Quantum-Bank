@@ -49,7 +49,7 @@ When you need to add or update a dependency:
        "new-package>=1.0.0",
        # other dependencies...
    ]
-   
+
    # Or for dev dependencies
    [project.optional-dependencies]
    development = [
@@ -67,10 +67,10 @@ When you need to add or update a dependency:
    ```bash
    # Either using uv (recommended)
    uv pip install -e .
-   
+
    # Or for development dependencies
    uv pip install -e ".[development]"
-   
+
    # Or using pip
    pip install -e .
    pip install -e ".[development]"
@@ -126,4 +126,4 @@ For development, we recommend:
    pre-commit install
    ```
 
-This ensures you have all the tools needed for development, testing, and code quality. 
+This ensures you have all the tools needed for development, testing, and code quality.

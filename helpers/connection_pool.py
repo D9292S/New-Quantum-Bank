@@ -190,7 +190,10 @@ class ConnectionPoolManager:
                 "circuit_state": self._circuit_state,
                 "failure_count": self._failure_count,
             },
-            "http": {"requests_total": self._http_requests_total, "request_failures": self._http_request_failures},
+            "http": {
+                "requests_total": self._http_requests_total,
+                "request_failures": self._http_request_failures,
+            },
         }
 
     @staticmethod

@@ -275,4 +275,4 @@ Reset a user's financial data.
 **Example:**
 ```
 /admin reset-user user:@username
-``` 
+```

@@ -49,7 +49,8 @@ async def db_instance(mock_bot):
     # Replace the client with our mock and disable asyncio tasks
     db.client = mock_mongo_client
 
-    # Mock the performance check task to prevent background tasks
+    # Properly mock performance monitoring to prevent warning about unwaited coroutine
+    db._run_performance_monitoring = AsyncMock()  # Replace with AsyncMock before it's called
     db._performance_check_task = MagicMock()
     db.connected = True
     db._start_performance_check = MagicMock()
@@ -82,9 +83,7 @@ async def db_instance(mock_bot):
 
     yield db
 
-    # Clean up any pending tasks
-    if hasattr(db, "_run_performance_monitoring"):
-        db._run_performance_monitoring = AsyncMock()
+    # No need to reset the coroutine since we already mocked it properly
 
     # Close the client connection
     if hasattr(db, "client") and db.client:
@@ -95,6 +94,7 @@ async def db_instance(mock_bot):
 
 
 @pytest.mark.asyncio
+@pytest.mark.database
 async def test_create_user(db_instance):
     """Test creating a user"""
     user_id = "123456789"
@@ -118,6 +118,7 @@ async def test_create_user(db_instance):
 
 
 @pytest.mark.asyncio
+@pytest.mark.database
 async def test_create_account(db_instance):
     """Test creating an account"""
     user_id = "123456789"
@@ -166,6 +167,7 @@ async def test_create_account(db_instance):
 
 
 @pytest.mark.asyncio
+@pytest.mark.database
 async def test_update_balance(db_instance):
     """Test updating account balance"""
     user_id = "123456789"
@@ -205,6 +207,7 @@ async def test_update_balance(db_instance):
 
 
 @pytest.mark.asyncio
+@pytest.mark.database
 async def test_transfer_between_accounts(db_instance):
     """Test transferring funds between accounts"""
     sender_id = "123456789"

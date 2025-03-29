@@ -20,17 +20,17 @@ This guide provides comprehensive information for developers who want to contrib
    ```
 
 2. **Set up a virtual environment:**
-   
+
    Using uv (recommended):
    ```bash
    # Install uv if you don't have it
    curl -LsSf https://astral.sh/uv/install.sh | sh
-   
+
    # Create a virtual environment and install dependencies
    uv venv
    uv pip install -e ".[development]"  # Includes dev dependencies
    ```
-   
+
    Using standard venv:
    ```bash
    python -m venv .venv
@@ -39,7 +39,7 @@ This guide provides comprehensive information for developers who want to contrib
    ```
 
 3. **Configure environment variables:**
-   
+
    Create a `.env` file in the root directory with:
    ```
    BOT_TOKEN=your_discord_bot_token
@@ -120,12 +120,12 @@ async def test_create_account():
     # Setup
     mock_ctx = AsyncMock()
     mock_ctx.author.id = 123456789
-    
+
     # Execute
     with patch('cogs.mongo.Database.get_user') as mock_get_user:
         mock_get_user.return_value = None  # User doesn't exist yet
         result = await create_account(mock_ctx)
-    
+
     # Assert
     assert "Account created successfully" in result
 ```
@@ -185,4 +185,4 @@ If you need help with development:
 
 - Open an issue on GitHub
 - Discuss in our [Discord server](https://discord.gg/quantum-bank)
-- Check the existing documentation 
+- Check the existing documentation

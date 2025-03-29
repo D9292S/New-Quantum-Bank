@@ -1,0 +1,7 @@
+[tool.uv]
+exclude = [".venv", "venv", "build", "dist"]
+resolution = "highest"
+
+[tool.uv.virtualenv]
+path = ".venv"
+prompt = "quantum-bank" 

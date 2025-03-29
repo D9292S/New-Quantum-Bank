@@ -374,7 +374,11 @@ def cached(
 
             # Store result in cache
             await cache_manager.set(
-                cache_key, result, ttl=ttl, namespace=_namespace, store_distributed=store_distributed
+                cache_key,
+                result,
+                ttl=ttl,
+                namespace=_namespace,
+                store_distributed=store_distributed,
             )
 
             return result

@@ -201,7 +201,10 @@ def rate_limit(limit: int, window: int, *, key_func: Optional[Callable] = None, 
                 else:
                     time_str = f"{retry_after:.1f}s"
 
-                await ctx.respond(f"⏳ You're using this command too quickly. Please wait {time_str}.", ephemeral=True)
+                await ctx.respond(
+                    f"⏳ You're using this command too quickly. Please wait {time_str}.",
+                    ephemeral=True,
+                )
                 return
 
             # Execute the command
