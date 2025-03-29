@@ -32,6 +32,8 @@ frozenlist==1.5.0
     #   aiosignal
 idna==3.10
     # via yarl
+mongomock==4.3.0
+    # via quantum-bank-bot (pyproject.toml)
 motor==3.7.0
     # via quantum-bank-bot (pyproject.toml)
 multidict==6.2.0
@@ -40,6 +42,8 @@ multidict==6.2.0
     #   yarl
 orjson==3.10.16
     # via quantum-bank-bot (pyproject.toml)
+packaging==24.2
+    # via mongomock
 propcache==0.3.1
     # via
     #   aiohttp
@@ -61,7 +65,11 @@ python-dateutil==2.9.0.post0
 python-dotenv==0.21.1
     # via quantum-bank-bot (pyproject.toml)
 pytz==2023.4
-    # via quantum-bank-bot (pyproject.toml)
+    # via
+    #   quantum-bank-bot (pyproject.toml)
+    #   mongomock
+sentinels==1.0.0
+    # via mongomock
 six==1.17.0
     # via python-dateutil
 typing-extensions==4.13.0
