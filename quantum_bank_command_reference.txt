@@ -1,0 +1,745 @@
+# QUANTUM BANK DISCORD BOT
+# Complete Command & Function Reference
+# -----------------------------------------
+
+Table of Contents
+1. Bank Account Commands
+2. Credit & Loan Commands
+3. Admin Commands
+4. Performance Monitoring
+5. Utility Commands
+6. Command-line Arguments
+7. Internal Helper Functions
+8. Developer Reference
+
+## 1. BANK ACCOUNT COMMANDS
+
+### `/create_account [type]`
+Creates a new bank account.
+```
+Example: /create_account type:Savings
+Output: 
+✅ Successfully created your Savings account!
+Account #: 10058493
+Balance: $1,000.00
+Interest Rate: 2.5%
+```
+
+### `/view_account_details`
+Shows details about your account.
+```
+Example: /view_account_details
+Output: [Embed with account information]
+Account #: 10058493
+Account Type: Savings
+Balance: $1,045.32
+Interest Rate: 2.5%
+Account Age: 31 days
+Credit Score: 650
+```
+
+### `/passbook [pages]`
+Shows your recent transaction history.
+```
+Example: /passbook pages:2
+Output: [Embed with transaction list]
+Page 1/2 (10 most recent transactions)
+04/15/2023 | +$100.00 | Deposit | Balance: $1,145.32
+04/10/2023 | -$50.00 | Withdrawal | Balance: $1,045.32
+...
+[Previous Page] [Next Page]
+```
+
+### `/add_money [amount]`
+Deposits money into your account.
+```
+Example: /add_money amount:500
+Output:
+💰 Deposited $500.00 into your account!
+New Balance: $1,545.32
+```
+
+### `/check_user_balance`
+Shows your current account balance.
+```
+Example: /check_user_balance
+Output:
+Your current balance is $1,545.32
+```
+
+## 2. CREDIT & LOAN COMMANDS
+
+### `/credit_score`
+Displays your current credit score.
+```
+Example: /credit_score
+Output: [Embed with credit score]
+Your Credit Score: 650
+Rating: Good
+Eligible for loans up to $10,000
+```
+
+### `/credit_report`
+Shows a detailed report of your credit history.
+```
+Example: /credit_report
+Output: [Embed with detailed credit information]
+Credit Score: 650
+Loan History: 2 active, 1 completed
+Payment History: 15/15 on-time payments
+Credit Utilization: 45%
+Account Age: 31 days
+Recent Inquiries: 1
+```
+
+### `/apply_loan [amount] [term]`
+Applies for a new loan.
+```
+Example: /apply_loan amount:5000 term:12
+Output:
+✅ Loan application approved!
+Loan #: L-10002
+Amount: $5,000.00
+Term: 12 months
+Interest Rate: 5.2%
+Monthly Payment: $428.04
+Funds have been added to your account.
+```
+
+### `/repay_loan [loan_id] [amount]`
+Makes a payment on an existing loan.
+```
+Example: /repay_loan loan_id:L-10002 amount:500
+Output:
+✅ Payment of $500.00 applied to loan L-10002
+Remaining balance: $4,500.00
+Remaining payments: 11
+```
+
+### `/loan_status [loan_id]`
+Checks the status of a loan.
+```
+Example: /loan_status loan_id:L-10002
+Output: [Embed with loan details]
+Loan ID: L-10002
+Principal: $5,000.00
+Remaining Balance: $4,500.00
+Interest Rate: 5.2%
+Term: 12 months
+Monthly Payment: $428.04
+Payments Made: 1/12
+Next Payment Due: 05/15/2023
+```
+
+### `/loan_calculator [amount] [term] [rate]`
+Calculates potential loan payments.
+```
+Example: /loan_calculator amount:10000 term:36 rate:4.5
+Output:
+Loan Calculation Results:
+Principal: $10,000.00
+Term: 36 months
+Interest Rate: 4.5%
+Monthly Payment: $297.30
+Total Interest: $706.80
+Total Payment: $10,706.80
+```
+
+## 3. ADMIN COMMANDS
+
+### `/blacklist_user [user] [reason]`
+Blocks a user from using bot commands (admin only).
+```
+Example: /blacklist_user user:@BadUser reason:Abusing commands
+Output:
+✅ @BadUser has been blacklisted.
+Reason: Abusing commands
+Their account access has been restricted.
+```
+
+### `/unblacklist_user [user]`
+Removes a user from the blacklist (admin only).
+```
+Example: /unblacklist_user user:@BadUser
+Output:
+✅ @BadUser has been removed from the blacklist.
+They can now use bot commands again.
+```
+
+### `/reset_account [user]`
+Resets a user's account to default values (admin only).
+```
+Example: /reset_account user:@JohnDoe
+Output:
+✅ Reset @JohnDoe's account to default state.
+Their balance, loans, and credit history have been cleared.
+```
+
+### `/set_credit_score [user] [score]`
+Manually adjusts a user's credit score (admin only).
+```
+Example: /set_credit_score user:@JohnDoe score:700
+Output:
+✅ Set @JohnDoe's credit score to 700.
+Previous score: 650
+```
+
+### `/set_server_prefix [prefix]`
+Changes the command prefix for the server (admin only).
+```
+Example: /set_server_prefix prefix:$
+Output:
+✅ Server command prefix changed to: $
+Legacy commands can now be used with $help, $balance, etc.
+```
+
+### `/view_logs [count]`
+Shows recent bot action logs (admin only).
+```
+Example: /view_logs count:10
+Output: [Embed with log entries]
+Recent Activity Logs (10 entries):
+04/15/2023 22:15 | User @JohnDoe created Savings account
+04/15/2023 22:16 | User @JaneDoe deposited $1,000
+...
+```
+
+## 4. PERFORMANCE MONITORING
+
+### `/performance`
+Shows detailed system performance metrics.
+```
+Example: /performance
+Output: [Embed with system metrics]
+🖥️ System Resources:
+Memory Usage: 154.2 MB
+CPU Usage: 23.5%
+Threads: 12
+Uptime: 2d 5h 30m
+
+🤖 Bot Statistics:
+Guilds: 42
+Users: 2,587
+Messages: 15,423
+Commands: 3,245
+
+⚡ Sharding:
+Latency: 38.2 ms
+Shards: 2
+Cluster ID: 0
+Total Clusters: 1
+
+🔄 Cache Performance:
+Hit Rate: 82.4%
+Items Cached: 12,345
+Cache Size: 24.5 MB
+Namespaces: 8
+```
+
+### `/benchmark`
+Runs performance tests on various system components.
+```
+Example: /benchmark
+Output: [Embed with benchmark results]
+🗄️ Database Performance:
+Read (Cached): 2.34 ms
+Read (Uncached): 34.56 ms
+Write: 12.45 ms
+Query: 18.92 ms
+Cache Benefit: 14.8x faster
+
+🌐 API Performance:
+Discord API: 87.34 ms
+HTTP Get: 124.56 ms
+HTTP Post: 145.89 ms
+
+📦 Serialization:
+JSON (standard): 18.45 ms
+orjson: 3.21 ms
+msgpack: 2.87 ms
+
+💾 Memory Operations:
+Dict Access (10K): 1.23 ms
+List Iteration (10K): 2.45 ms
+String Concat (1K): 3.67 ms
+
+🖥️ System Info:
+OS: Windows 11
+Python: 3.12.9
+CPU Cores: 8
+Memory: 16.0 GB
+```
+
+### `/perfgraph [metric] [timespan]`
+Generates a graph showing performance metrics over time.
+
+Available metrics:
+- memory: Memory usage in MB
+- cpu: CPU utilization percentage
+- latency: Discord API latency in ms
+- commands: Commands processed per minute
+
+Available timespans:
+- 1h: Last hour (1 data point per minute)
+- 6h: Last 6 hours (1 data point per 6 minutes)
+- 24h: Last 24 hours (1 data point per 24 minutes)
+- 7d: Last 7 days (1 data point per 168 minutes)
+
+```
+Example: /perfgraph metric:memory timespan:24h
+Output: [Embed with a line graph showing memory usage over the past 24 hours]
+The graph shows fluctuations in memory usage, with peaks around high-usage times
+and memory cleanup periods visible as sudden drops.
+```
+
+### `/cmdstats`
+Shows statistics about command usage and performance.
+```
+Example: /cmdstats
+Output: [Embed with command statistics]
+apply_loan:
+Avg Time: 125.34 ms
+Count: 32
+Min: 98.12 ms
+Max: 203.45 ms
+
+passbook:
+Avg Time: 87.56 ms
+Count: 128
+Min: 54.23 ms
+Max: 145.67 ms
+
+credit_report:
+Avg Time: 65.43 ms
+Count: 56
+Min: 42.11 ms
+Max: 89.34 ms
+```
+
+## 5. UTILITY COMMANDS
+
+### `/help [command]`
+Shows help information about commands.
+```
+Example: /help command:apply_loan
+Output: [Embed with command help]
+Command: apply_loan
+Description: Apply for a bank loan
+Usage: /apply_loan amount:5000 term:12
+Parameters:
+- amount: The loan amount (100-50000)
+- term: Loan duration in months (3-60)
+Examples:
+- /apply_loan amount:1000 term:6
+- /apply_loan amount:25000 term:36
+```
+
+### `/ping`
+Checks the bot's latency to Discord.
+```
+Example: /ping
+Output:
+🏓 Pong!
+Bot Latency: 42ms
+API Latency: 38ms
+Database Response: 12ms
+```
+
+### `/info`
+Shows information about the bot.
+```
+Example: /info
+Output: [Embed with bot information]
+Quantum Bank Bot v1.0.0
+Running on Python 3.12.9
+Uptime: 3d 12h 45m
+Servers: 42
+Users: 2,587
+Commands: 25
+Developer: @BotCreator
+Library: discord.py 2.5.0
+Support Server: [Link]
+```
+
+### `/server`
+Shows information about the current server.
+```
+Example: /server
+Output: [Embed with server info]
+Server: Cool Discord Server
+Created: January 15, 2022
+Owner: @ServerOwner
+Members: 250 (240 online)
+Channels: 25 text, 5 voice
+Roles: 15
+Premium Level: 2
+Bot Prefix: !
+```
+
+### `/invite`
+Generates invite links for the bot.
+```
+Example: /invite
+Output:
+🔗 Invite Quantum Bank to your server:
+[Bot Invite Link]
+
+Join our support server:
+[Support Server Link]
+```
+
+### `/vote`
+Provides links to vote for the bot on listing sites.
+```
+Example: /vote
+Output:
+Support Quantum Bank by voting! 🗳️
+[Vote on Top.gg]
+[Vote on Discord Bot List]
+
+Voting gives you rewards!
++100 credits per vote
+Boosted interest rates for 24h
+```
+
+## 6. COMMAND-LINE ARGUMENTS
+
+These are used when starting the bot from the command line:
+
+### Basic Usage
+```bash
+python launcher.py [options]
+```
+
+### Available Arguments
+
+#### `--debug`
+Enables debug mode with verbose logging.
+```bash
+python launcher.py --debug
+```
+
+#### `--shards <number>`
+Specifies the total number of shards the bot should use.
+```bash
+python launcher.py --shards 4
+```
+
+#### `--shardids <id1,id2,...>`
+Runs only specific shard IDs from the total shards.
+```bash
+python launcher.py --shards 10 --shardids 0,1,2
+```
+
+#### `--cluster <number>`
+Sets the ID for this cluster instance (used in multi-process operation).
+```bash
+python launcher.py --cluster 0 --clusters 4
+```
+
+#### `--clusters <number>`
+Specifies the total number of clusters the bot is running on.
+```bash
+python launcher.py --clusters 4 --shards 8
+```
+
+#### `--performance <level>`
+Sets the performance optimization level:
+- `low`: Minimizes resource usage (best for small VPS/shared hosting)
+- `medium`: Balanced performance (default)
+- `high`: Maximum performance, enables:
+  - uvloop on non-Windows platforms
+  - orjson for faster JSON processing
+  - Aggressive connection pooling
+```bash
+python launcher.py --performance high
+```
+
+### Multi-Cluster Setup Example
+To run 4 clusters with 8 total shards (2 shards per cluster):
+```bash
+# Terminal 1
+python launcher.py --cluster 0 --clusters 4 --shards 8
+
+# Terminal 2
+python launcher.py --cluster 1 --clusters 4 --shards 8
+
+# Terminal 3
+python launcher.py --cluster 2 --clusters 4 --shards 8
+
+# Terminal 4
+python launcher.py --cluster 3 --clusters 4 --shards 8
+```
+
+## 7. INTERNAL HELPER FUNCTIONS
+
+### Cache Management
+
+#### `cached(ttl=300, namespace=None)`
+Decorator to cache function results for a specified time.
+```python
+@cached(ttl=60, namespace="user_data")
+async def get_user_data(user_id):
+    # This function's results will be cached for 60 seconds
+    return await db.users.find_one({"id": user_id})
+```
+
+#### `cache_manager.get(key, namespace='default')`
+Retrieve a value from the cache.
+```python
+user_data = await bot.cache_manager.get(f"user_{user_id}", namespace="profiles")
+if user_data is None:
+    # Not in cache, fetch from database
+    user_data = await db.users.find_one({"id": user_id})
+    await bot.cache_manager.set(f"user_{user_id}", user_data, namespace="profiles")
+```
+
+#### `cache_manager.set(key, value, ttl=None, namespace='default', store_distributed=False)`
+Store a value in the cache.
+```python
+# Cache for 5 minutes
+await bot.cache_manager.set(
+    f"guild_{guild_id}", 
+    guild_data, 
+    ttl=300, 
+    namespace="guilds"
+)
+
+# Store in distributed cache (accessible across shards)
+await bot.cache_manager.set(
+    f"global_settings", 
+    settings_data,
+    store_distributed=True
+)
+```
+
+#### `cache_manager.delete(key, namespace='default')`
+Remove a specific key from the cache.
+```python
+# Remove user data when it's updated
+await bot.cache_manager.delete(f"user_{user_id}", namespace="profiles")
+```
+
+#### `cache_manager.invalidate_namespace(namespace)`
+Clear an entire cache namespace.
+```python
+# Clear all guild settings when configurations change
+await bot.cache_manager.invalidate_namespace("guild_settings")
+```
+
+### Connection Management
+
+#### `connection_pool.get_mongo_client()`
+Get or create a MongoDB client with connection pooling.
+```python
+mongo_client = await bot.conn_pool.get_mongo_client()
+if mongo_client:
+    db = mongo_client["quantum_bank"]
+    user_data = await db.users.find_one({"id": user_id})
+```
+
+#### `connection_pool.get_http_session()`
+Get or create an optimized HTTP session.
+```python
+async with (await bot.conn_pool.get_http_session()).get(url) as response:
+    data = await response.json()
+```
+
+#### `connection_pool.close()`
+Properly close all connections.
+```python
+# When shutting down the bot
+await bot.conn_pool.close()
+```
+
+### Shard Management
+
+#### `shard_manager.start_monitoring_async()`
+Start monitoring shard health and performance.
+```python
+# Called in bot.on_ready
+await bot.shard_manager.start_monitoring_async()
+```
+
+#### `shard_manager.send_cross_shard_event(event_type, data, target_shards=None)`
+Send an event to other shards or clusters.
+```python
+# Update a user's data across all shards
+await bot.shard_manager.send_cross_shard_event(
+    "user_update",
+    {"user_id": user.id, "data": new_data}
+)
+
+# Target specific shards
+await bot.shard_manager.send_cross_shard_event(
+    "guild_update",
+    {"guild_id": guild.id, "data": new_data},
+    target_shards=[0, 1]
+)
+```
+
+#### `shard_manager.process_pending_events()`
+Process events sent from other shards.
+```python
+# Called periodically to handle cross-shard events
+count = await bot.shard_manager.process_pending_events()
+bot.log.info(f"Processed {count} cross-shard events")
+```
+
+#### `shard_manager.get_all_shard_statuses()`
+Get the status of all shards across all clusters.
+```python
+# Used for status dashboard
+statuses = await bot.shard_manager.get_all_shard_statuses()
+for status in statuses:
+    print(f"Cluster {status['cluster_id']} | Shards: {status['shard_ids']} | Status: {status['status']}")
+```
+
+### Rate Limiting
+
+#### `rate_limit(limit, window, bucket='user')`
+Decorator to limit command usage.
+```python
+@commands.command()
+@rate_limit(5, 60)  # 5 uses per minute per user
+async def expensive_command(self, ctx):
+    # This command can only be used 5 times per minute per user
+    await ctx.send("This is rate-limited!")
+```
+
+#### `rate_limiter.increment(bucket, key, limit, window)`
+Manually track and limit usage.
+```python
+# Check if a user is rate limited for API calls
+is_limited, retry_after = bot.rate_limiter.increment(
+    'api_calls', 
+    str(user.id), 
+    limit=10, 
+    window=60
+)
+
+if is_limited:
+    await ctx.send(f"Rate limited! Try again in {retry_after:.1f} seconds")
+    return
+```
+
+## 8. DEVELOPER REFERENCE
+
+### Database Operations
+
+#### Account Management
+```python
+# Create a new account
+account = await db.create_account(user_id, account_type="Savings")
+
+# Get account details
+account = await db.get_user_account(user_id)
+
+# Update balance
+new_balance = await db.update_balance(user_id, amount=500.00)  # Add money
+new_balance = await db.update_balance(user_id, amount=-200.00)  # Remove money
+
+# Log a transaction
+transaction = await db.log_transaction(
+    user_id=user_id,
+    amount=500.00,
+    type="deposit",
+    description="Added funds"
+)
+
+# Get transaction history (passbook)
+transactions = await db.get_passbook(user_id, limit=10)
+```
+
+#### Loan Management
+```python
+# Apply for a loan
+loan = await db.apply_loan(
+    user_id=user_id,
+    amount=5000.00,
+    term=12,  # months
+    interest_rate=5.2
+)
+
+# Make a loan payment
+payment = await db.repay_loan(
+    user_id=user_id,
+    loan_id=loan_id,
+    amount=428.04
+)
+
+# Get loan status
+loan_status = await db.get_loan_status(user_id, loan_id)
+
+# Calculate loan details
+loan_details = await db.calculate_loan(
+    amount=10000.00,
+    term=36,
+    rate=4.5
+)
+```
+
+#### Credit System
+```python
+# Get credit score
+score = await db.get_credit_score(user_id)
+
+# Update credit score
+new_score = await db.update_credit_score(
+    user_id=user_id,
+    points=5,  # Add 5 points
+    reason="On-time payment"
+)
+
+# Get credit report
+report = await db.get_credit_report(user_id)
+```
+
+### Performance Metrics
+
+#### System Metrics
+```python
+# Get all system metrics
+metrics = bot.get_system_metrics()
+
+# Memory usage in MB
+memory = metrics["memory_usage_mb"]
+
+# CPU usage percentage
+cpu = metrics["cpu_percent"]
+
+# Latency in milliseconds
+latency = metrics["latency"]
+
+# Cache hit rate percentage
+hit_rate = metrics["cache"]["hit_rate"] * 100
+```
+
+#### Benchmark Functions
+```python
+# Run all benchmarks
+results = await bot.get_cog('PerformanceMonitor')._run_benchmarks()
+
+# Database benchmark
+db_metrics = results["db"]
+cache_benefit = db_metrics["cache_benefit"]  # How much faster cached reads are
+
+# Serialization benchmark
+ser_metrics = results["serialization"]
+json_vs_orjson = ser_metrics["json"] / ser_metrics["orjson"]  # Speed improvement
+```
+
+#### Automatic Performance Monitoring
+The bot automatically collects performance metrics at regular intervals and stores them for historical analysis. These metrics can be viewed through the `/perfgraph` command or accessed programmatically:
+
+```python
+# Get historical memory usage data for the last hour
+perf_monitor = bot.get_cog('PerformanceMonitor')
+hour_data = perf_monitor._interval_data["1h"]
+
+# Get average memory usage
+avg_memory = sum(m.get("memory_usage_mb", 0) for m in hour_data) / len(hour_data)
+
+# Get peak CPU usage
+peak_cpu = max(m.get("cpu_percent", 0) for m in hour_data)
+``` 

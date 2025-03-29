@@ -7,8 +7,10 @@ requires-python = ">=3.12"
 dependencies = [
     "coloredlogs>=15.0.1",
     "expiringdict>=1.2.2",
+    "matplotlib>=3.10.1",
     "motor>=3.7.0",
     "pillow>=11.1.0",
+    "psutil>=7.0.0",
     "py-cord>=2.6.1",
     "pymongo>=4.11.3",
     "python-dotenv>=1.1.0",
