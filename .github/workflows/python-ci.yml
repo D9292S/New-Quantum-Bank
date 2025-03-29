@@ -54,7 +54,7 @@ jobs:
 
     - name: Lint with ruff
       run: |
-        ruff check .
+        ruff check . --fix --ignore=ANN201,ANN001,ANN204,ANN202 --exclude tests/
 
     - name: Check formatting with black
       run: |

@@ -157,7 +157,7 @@ class DatabaseTester:
             print(f"Error checking/creating collections: {str(e)}")
             return False
 
-    async def test_writes(self):
+    async def test_writes(self) -> bool:
         """Test if we can write to collections"""
         if not self.connected or self.db is None:
             print("Not connected to database, cannot test writes")
@@ -190,7 +190,7 @@ class DatabaseTester:
         return success_count == len(collections_to_test)
 
 
-async def test_mongodb_connection():
+async def test_mongodb_connection() -> None:
     # Load environment variables
     load_dotenv()
 

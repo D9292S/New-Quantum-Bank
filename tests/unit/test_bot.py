@@ -260,22 +260,20 @@ class TestBotEvents:
 
     async def test_on_message(self, test_bot):
         """Test the on_message event handler."""
-        # Mock logger
-        with patch.object(test_bot, "bot_logger") as mock_logger:
-            # Create a mock message
-            mock_message = MagicMock()
-            mock_message.author = MagicMock()
+        # Create a mock message
+        mock_message = MagicMock()
+        mock_message.author = MagicMock()
 
-            # Test with bot message
-            mock_message.author.bot = True
-            await test_bot.on_message(mock_message)
-            assert test_bot.message_count == 0  # Should not increment for bot messages
+        # Test with bot message
+        mock_message.author.bot = True
+        await test_bot.on_message(mock_message)
+        assert test_bot.message_count == 0  # Should not increment for bot messages
 
-            # Test with user message
-            mock_message.author.bot = False
-            mock_message.content = "Hello!"
-            await test_bot.on_message(mock_message)
-            assert test_bot.message_count == 1  # Should increment for user messages
+        # Test with user message
+        mock_message.author.bot = False
+        mock_message.content = "Hello!"
+        await test_bot.on_message(mock_message)
+        assert test_bot.message_count == 1  # Should increment for user messages
 
     async def test_on_ready(self, test_bot):
         """Test on_ready event handler."""
