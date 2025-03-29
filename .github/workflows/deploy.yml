@@ -35,7 +35,7 @@ jobs:
           python -m build
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
@@ -77,13 +77,13 @@ jobs:
     environment: ${{ github.event.inputs.environment || 'staging' }}
     steps:
       - name: Download build artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
 
       - name: Deploy to staging
-        if: ${{ github.event.inputs.environment == 'staging' || github.event_name == 'release' }}
+        if: ${{ github.event.inputs.environment == 'staging' || github.event_name == 'release' }}        
         run: |
           echo "Deploying to staging environment"
           # Example deployment commands:
@@ -103,4 +103,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           environment: ${{ github.event.inputs.environment || 'staging' }}
-          initial-status: success
+          initial-status: success 

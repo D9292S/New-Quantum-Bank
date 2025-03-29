@@ -33,7 +33,7 @@ jobs:
         safety check
 
     - name: Upload bandit scan results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: bandit-results
         path: bandit-results.json
@@ -47,4 +47,4 @@ jobs:
           exit 0  # Don't fail the build yet, just report
         else
           echo "No security issues found."
-        fi
+        fi 
