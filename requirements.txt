@@ -18,7 +18,7 @@ cffi==1.17.1
     #   pynacl
 colorama==0.4.6
     # via quantum-bank-bot (pyproject.toml)
-cryptography==40.0.2
+cryptography==44.0.2
     # via quantum-bank-bot (pyproject.toml)
 dnspython==2.7.0
     # via
