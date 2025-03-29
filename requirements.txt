@@ -18,12 +18,14 @@ cffi==1.17.1
     #   pynacl
 colorama==0.4.6
     # via quantum-bank-bot (pyproject.toml)
-cryptography==44.0.2
+cryptography==40.0.2
     # via quantum-bank-bot (pyproject.toml)
 dnspython==2.7.0
     # via
     #   quantum-bank-bot (pyproject.toml)
     #   pymongo
+expiringdict==1.2.2
+    # via quantum-bank-bot (pyproject.toml)
 frozenlist==1.5.0
     # via
     #   aiohttp
@@ -42,6 +44,8 @@ propcache==0.3.1
     # via
     #   aiohttp
     #   yarl
+psutil==5.9.8
+    # via quantum-bank-bot (pyproject.toml)
 py-cord==2.6.1
     # via quantum-bank-bot (pyproject.toml)
 pycparser==2.22
@@ -54,9 +58,9 @@ pynacl==1.5.0
     # via quantum-bank-bot (pyproject.toml)
 python-dateutil==2.9.0.post0
     # via quantum-bank-bot (pyproject.toml)
-python-dotenv==1.1.0
+python-dotenv==0.21.1
     # via quantum-bank-bot (pyproject.toml)
-pytz==2025.2
+pytz==2023.4
     # via quantum-bank-bot (pyproject.toml)
 six==1.17.0
     # via python-dateutil
