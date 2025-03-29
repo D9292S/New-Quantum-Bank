@@ -44,30 +44,29 @@ high-performance = [
     'uvloop>=0.16.0,<0.18.0; platform_system != "Windows"',
 ]
 
-development = [
+testing = [
     "pytest>=7.0.0,<8.0.0",
     "pytest-asyncio>=0.20.0,<0.22.0",
     "pytest-cov>=4.0.0,<5.0.0",
+]
+
+development = [
     "black>=23.0.0,<24.0.0",
     "ruff>=0.0.280,<0.4.0",
     "bandit>=1.7.5,<2.0.0",
     "pre-commit>=3.3.0,<4.0.0",
     "mypy>=1.0.0,<2.0.0",
-    "mongomock>=4.1.2,<5.0.0",
     "motor-stubs>=1.7.1,<2.0.0",
-]
-
-testing = [
-    "pytest>=7.0.0,<8.0.0",
-    "pytest-asyncio>=0.20.0,<0.22.0",
-    "pytest-cov>=4.0.0,<5.0.0",
-    "mongomock>=4.1.2,<5.0.0",
 ]
 
 docs = [
     "sphinx>=6.0.0,<7.0.0",
     "sphinx-rtd-theme>=1.2.0,<2.0.0",
     "myst-parser>=1.0.0,<2.0.0",
+]
+
+dev = [
+    "quantum-bank-bot[testing,development,docs]",
 ]
 
 [build-system]
