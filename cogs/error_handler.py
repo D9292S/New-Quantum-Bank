@@ -1,9 +1,16 @@
+import logging
+from functools import wraps
+
 import discord
 from discord.ext import commands
-import logging
-from typing import Optional, Callable, Any
-from functools import wraps
-from helper.exceptions import DatabaseError, ValidationError, ConnectionError, AccountError, TransactionError, PassbookError, KYCError
+
+from helper.exceptions import (
+    AccountError,
+    KYCError,
+    PassbookError,
+    TransactionError,
+    ValidationError,
+)
 
 COGS_METADATA = {
     "name": "error_handler",
@@ -55,7 +62,7 @@ class ErrorHandler(commands.Cog):
         if isinstance(error, commands.CommandOnCooldown):
             minutes = int(error.retry_after / 60)
             seconds = int(error.retry_after % 60)
-            cooldown_msg = f"This command is on cooldown! Try again in "
+            cooldown_msg = "This command is on cooldown! Try again in "
             if minutes > 0:
                 cooldown_msg += f"{minutes} minutes and "
             cooldown_msg += f"{seconds} seconds."

@@ -1,8 +1,10 @@
-import discord
-from discord.ext import commands
-import requests
 import os
 from datetime import datetime
+
+import discord
+import requests
+from discord.ext import commands
+
 
 class AnimeView(discord.ui.View):
     def __init__(self, anime_data):

@@ -1,21 +1,19 @@
 import asyncio
-import aiohttp
-import time
 import importlib
-import os
 import logging
-import discord
-import structlog
-import coloredlogs
-import re
-import sys
 import math
+import os
+import time
+from typing import Any, Dict
+
+import aiohttp
+import discord
 import psutil
 from expiringdict import ExpiringDict
-from typing import Optional, Dict, Any, List, Union
 
 import helpers
-from helpers import ConnectionPoolManager, CacheManager, ShardManager
+from helpers import CacheManager, ConnectionPoolManager, ShardManager
+
 
 class ClusterBot(discord.AutoShardedBot):
     class BlueEmbed(discord.Embed):

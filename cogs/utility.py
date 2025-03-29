@@ -1,13 +1,13 @@
-import discord
-from discord.ext import commands
-import time
 import datetime
-import platform
-import psutil
-import sys
-import os
 import logging
+import os
+import platform
+import time
 from typing import Optional
+
+import discord
+import psutil
+from discord.ext import commands
 
 COG_METADATA = {
     "name": "utility",

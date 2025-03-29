@@ -1,17 +1,15 @@
-import discord
-from discord.ext import commands, tasks
-import time
-import datetime
 import asyncio
-import psutil
-import platform
-import matplotlib.pyplot as plt
+import datetime
 import io
-from typing import Dict, List, Any, Optional
 import logging
-import os
-from helpers import cached
+import platform
 import random
+import time
+
+import discord
+import matplotlib.pyplot as plt
+import psutil
+from discord.ext import commands, tasks
 
 logger = logging.getLogger('performance')
 

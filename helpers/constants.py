@@ -1,6 +1,7 @@
 """
 Constants used throughout the Quantum Bank bot.
 """
+
 import discord
 
 # Discord color constants
@@ -14,27 +15,27 @@ PURPLE = discord.Color.purple()
 
 # Credit score rating thresholds
 CREDIT_SCORE_EXCELLENT = 750  # 750-850: Excellent
-CREDIT_SCORE_GOOD = 700       # 700-749: Good
-CREDIT_SCORE_FAIR = 650       # 650-699: Fair
-CREDIT_SCORE_POOR = 600       # 600-649: Poor
-CREDIT_SCORE_BAD = 300        # 300-599: Bad
+CREDIT_SCORE_GOOD = 700  # 700-749: Good
+CREDIT_SCORE_FAIR = 650  # 650-699: Fair
+CREDIT_SCORE_POOR = 600  # 600-649: Poor
+CREDIT_SCORE_BAD = 300  # 300-599: Bad
 
 # Credit limit multipliers based on credit score
 CREDIT_LIMIT_MULTIPLIERS = {
     "excellent": 10.0,  # 750-850
-    "good": 7.5,        # 700-749
-    "fair": 5.0,        # 650-699
-    "poor": 2.5,        # 600-649
-    "bad": 1.0          # 300-599
+    "good": 7.5,  # 700-749
+    "fair": 5.0,  # 650-699
+    "poor": 2.5,  # 600-649
+    "bad": 1.0,  # 300-599
 }
 
 # Interest rates based on credit score
 INTEREST_RATES = {
-    "excellent": 8.0,   # 750-850: 8.0%
-    "good": 10.0,       # 700-749: 10.0%
-    "fair": 12.0,       # 650-699: 12.0%
-    "poor": 14.0,       # 600-649: 14.0%
-    "bad": 16.0         # 300-599: 16.0%
+    "excellent": 8.0,  # 750-850: 8.0%
+    "good": 10.0,  # 700-749: 10.0%
+    "fair": 12.0,  # 650-699: 12.0%
+    "poor": 14.0,  # 600-649: 14.0%
+    "bad": 16.0,  # 300-599: 16.0%
 }
 
 # Time constants (in seconds)

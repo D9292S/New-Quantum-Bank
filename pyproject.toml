@@ -78,48 +78,24 @@ build-backend = "hatchling.build"
 packages = ["."]
 
 [tool.ruff]
-# Enable pycodestyle ('E'), Pyflakes ('F'), and import sorting ('I')
-select = ["E", "F", "I"]
-ignore = []
-line-length = 100
+target-version = "py39"
+line-length = 120
+extend-exclude = [".venv"]
 
-# Allow autofix for all enabled rules (when `--fix`) is provided
-fixable = ["E", "F", "I"]
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E203", "E722"]
+fixable = ["A", "B", "C", "D", "E", "F", "I"]
 unfixable = []
-
-# Exclude a variety of commonly ignored directories
-exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
-    ".git",
-    ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".pytype",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    "__pypackages__",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
-    "node_modules",
-    "venv",
-]
-per-file-ignores = {}
-
-# Allow unused variables when underscore-prefixed
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
-# Assume Python 3.9.
-target-version = "py39"
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/*" = ["E501"]
 
-[tool.ruff.isort]
-known-third-party = ["py_cord", "motor", "pymongo", "dotenv", "dateutil", "colorama", "orjson"]
+[tool.ruff.lint.isort]
+known-third-party = ["discord", "py_cord", "motor", "pymongo", "pytest"]
+known-first-party = ["cogs", "helpers", "utils"]
 
 [tool.black]
 line-length = 100

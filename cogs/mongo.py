@@ -1,28 +1,38 @@
+import asyncio
+import logging
 import os
-from datetime import datetime, timedelta
-import string
 import random
-from typing import Optional, List, Dict, Any, Union
-from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo.errors import OperationFailure, ConnectionFailure, DuplicateKeyError, NetworkTimeout, ServerSelectionTimeoutError
-from pymongo import ASCENDING, DESCENDING
+import re
+import string
+import time
+import uuid
+from datetime import datetime, timedelta
+from functools import wraps
+from typing import Any, Dict, List, Optional, Union
+
 import discord
 from discord.ext import commands
-import re
-from functools import wraps
-import time
-from .error_handler import ErrorHandler
-import logging
-import asyncio
-from helper.exceptions import (
-    DatabaseError, ValidationError, ConnectionError, 
-    AccountError, AccountNotFoundError, AccountTypeError, AccountAlreadyExistsError,
-    TransactionError, InsufficientFundsError, TransactionLimitError, InvalidTransactionError,
-    PassbookError, KYCError,
-    LoanError, LoanLimitError, LoanRepaymentError, LoanAlreadyExistsError,
-    CreditScoreError, InsufficientCreditScoreError
+from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import ASCENDING, DESCENDING
+from pymongo.errors import (
+    ConnectionFailure,
+    NetworkTimeout,
+    OperationFailure,
+    ServerSelectionTimeoutError,
 )
-import uuid
+
+from helper.exceptions import (
+    AccountNotFoundError,
+    CreditScoreError,
+    DatabaseError,
+    InsufficientCreditScoreError,
+    InsufficientFundsError,
+    LoanAlreadyExistsError,
+    LoanError,
+    LoanLimitError,
+    ValidationError,
+)
+
 
 class PerformanceMonitor:
     def __init__(self):
@@ -186,7 +196,7 @@ class Database(commands.Cog):
             # Initialize the db attribute with the fixed database name
             self.db = self.client.get_database(db_name)
             
-            self.logger.info(f"MongoDB client initialized - connection will be tested in cog_load")
+            self.logger.info("MongoDB client initialized - connection will be tested in cog_load")
         except Exception as e:
             self.logger.error(f"Failed to initialize MongoDB client: {str(e)}")
             self.client = None

@@ -1,13 +1,13 @@
-import discord
-from discord.ext import commands
-import psutil
-import platform
 import asyncio
-import os
-import sys
-from datetime import datetime, timedelta
 import logging
+import os
+import platform
+from datetime import datetime
+
+import discord
+import psutil
 from discord import Option
+from discord.ext import commands
 
 COG_METADATA = {
     "name": "admin_performance",
@@ -149,7 +149,7 @@ class AdminPerformance(commands.Cog):
         # Create embed
         embed = discord.Embed(
             title="🔹 Shard Status",
-            description=f"Running with sharding configuration",
+            description="Running with sharding configuration",
             color=discord.Color.blue()
         )
         
@@ -667,7 +667,7 @@ class AdminPerformance(commands.Cog):
                 return
             
             # Format the log entries
-            formatted_logs = f"```\n"
+            formatted_logs = "```\n"
             for line in log_lines:
                 # Truncate long lines to prevent discord message size issues
                 if len(line) > 100:

@@ -1,0 +1,141 @@
+[1mdiff --git a/README.md b/README.md[m
+[1mindex 448c3e9..31e8344 100644[m
+[1m--- a/README.md[m
+[1m+++ b/README.md[m
+[36m@@ -2,15 +2,51 @@[m
+ [m
+ Quantum Bank is a feature-rich Discord economy bot with advanced banking features, built using Discord.py and MongoDB.[m
+ [m
+[32m+[m[32m![Quantum Bank Banner](images/quantum_bank_banner.png)[m
+[32m+[m
+ ## Features[m
+ [m
+[31m-- 🏦 Complete banking system with accounts, transactions, and interest[m
+[31m-- 💹 Advanced economy features including investments and stock market simulation[m
+[31m-- 🎮 Economy-based minigames and activities[m
+[31m-- 🔒 Secure transactions with detailed logging[m
+[31m-- 📊 User-friendly statistics and leaderboards[m
+[31m-- 🎨 Colorful console logs with JSON formatting[m
+[31m-- 🔄 Seamless MongoDB integration for reliable data storage[m
+[32m+[m[32m- 🏦 **Complete banking system** with accounts, transactions, and interest[m
+[32m+[m[32m- 💰 **Multiple account types** (Savings, Checking, Fixed Deposits)[m
+[32m+[m[32m- 💳 **Credit system** with credit scores and loan management[m
+[32m+[m[32m- 💹 **Advanced economy features** including investments and stock market simulation[m
+[32m+[m[32m- 🎮 **Economy-based minigames** and activities[m
+[32m+[m[32m- 🔒 **Secure transactions** with detailed logging[m
+[32m+[m[32m- 📊 **User-friendly statistics** and leaderboards[m
+[32m+[m[32m- 🎨 **Colorful console logs** with JSON formatting[m
+[32m+[m[32m- 🔄 **Seamless MongoDB integration** for reliable data storage[m
+[32m+[m[32m- ⚡ **High performance design** with sharding and clustering support[m
+[32m+[m
+[32m+[m[32m## Command Examples[m
+[32m+[m
+[32m+[m[32m### Account Management[m
+[32m+[m[32m```[m
+[32m+[m[32m/account create - Create a new bank account[m
+[32m+[m[32m/account balance - Check your current balance[m
+[32m+[m[32m/account statement - View your recent transactions[m
+[32m+[m[32m/account close - Close your bank account[m
+[32m+[m[32m```[m
+[32m+[m
+[32m+[m[32m### Transactions[m
+[32m+[m[32m```[m
+[32m+[m[32m/deposit <amount> - Deposit funds into your account[m
+[32m+[m[32m/withdraw <amount> - Withdraw funds from your account[m
+[32m+[m[32m/transfer <user> <amount> - Transfer funds to another user[m
+[32m+[m[32m```[m
+[32m+[m
+[32m+[m[32m### Loans and Credit[m
+[32m+[m[32m```[m
+[32m+[m[32m/loan apply <amount> <duration> - Apply for a loan[m
+[32m+[m[32m/loan repay <amount> - Make a payment towards your loan[m
+[32m+[m[32m/credit score - Check your credit score[m
+[32m+[m[32m```[m
+[32m+[m
+[32m+[m[32m### Investments[m
+[32m+[m[32m```[m
+[32m+[m[32m/invest <amount> <stock> - Invest in a stock[m
+[32m+[m[32m/portfolio - View your investment portfolio[m
+[32m+[m[32m/market - View current market conditions[m
+[32m+[m[32m```[m
+ [m
+ ## Prerequisites[m
+ [m
+[36m@@ -49,8 +85,10 @@[m [mQuantum Bank is a feature-rich Discord economy bot with advanced banking feature[m
+ 4. Create a `.env` file in the root directory with the following variables:[m
+    ```[m
+    BOT_TOKEN=your_discord_bot_token[m
+[31m-   MONGODB_URI=your_mongodb_connection_string[m
+[31m-   MONGODB_DB_NAME=your_database_name[m
+[32m+[m[32m   MONGO_URI=your_mongodb_connection_string[m
+[32m+[m[32m   MAL_CLIENT_ID=your_myanimelist_client_id  # Optional, for anime commands[m
+[32m+[m[32m   ACTIVITY_STATUS=Quantum Bank | /help  # Custom status[m
+[32m+[m[32m   DEBUG=false  # Set to true for debug mode[m
+    ```[m
+ [m
+ 5. Run the bot:[m
+[36m@@ -58,17 +96,55 @@[m [mQuantum Bank is a feature-rich Discord economy bot with advanced banking feature[m
+    python launcher.py[m
+    ```[m
+ [m
+[31m-## Configuration[m
+[32m+[m[32m## Advanced Configuration[m
+[32m+[m
+[32m+[m[32mQuantum Bank supports advanced configuration options for scaling and performance:[m
+[32m+[m
+[32m+[m[32m```bash[m
+[32m+[m[32m# Run with specific performance mode[m
+[32m+[m[32mpython launcher.py --performance high[m
+[32m+[m
+[32m+[m[32m# Run with specific logging level[m
+[32m+[m[32mpython launcher.py --log-level verbose[m
+[32m+[m
+[32m+[m[32m# Run with sharding configuration[m
+[32m+[m[32mpython launcher.py --shards 3[m
+[32m+[m
+[32m+[m[32m# Run as part of a cluster[m[41m [m
+[32m+[m[32mpython launcher.py --cluster 0 --clusters 3[m
+[32m+[m[32m```[m
+[32m+[m
+[32m+[m[32mYou can also configure these options via environment variables in your `.env` file:[m
+[32m+[m
+[32m+[m[32m```[m
+[32m+[m[32mBOT_TOKEN=your_discord_bot_token[m
+[32m+[m[32mMONGO_URI=mongodb://username:password@host:port/dbname[m
+[32m+[m[32mDEBUG=false[m
+[32m+[m[32mPERFORMANCE_MODE=medium  # Options: low, medium, high[m
+[32m+[m[32mSHARD_COUNT=1[m
+[32m+[m[32m```[m
+[32m+[m
+[32m+[m[32m## Deployment[m
+[32m+[m
+[32m+[m[32m### Docker Deployment[m
+[32m+[m[32m```bash[m
+[32m+[m[32m# Build the Docker image[m
+[32m+[m[32mdocker build -t quantum-bank .[m
+ [m
+[31m-You can configure various aspects of the bot by modifying the appropriate values in your `.env` file:[m
+[32m+[m[32m# Run the container[m
+[32m+[m[32mdocker run -d \[m
+[32m+[m[32m  --name quantum-bank \[m
+[32m+[m[32m  --restart unless-stopped \[m
+[32m+[m[32m  -e BOT_TOKEN=your_token \[m
+[32m+[m[32m  -e MONGO_URI=your_mongodb_uri \[m
+[32m+[m[32m  quantum-bank[m
+[32m+[m[32m```[m
+ [m
+[31m-- `BOT_TOKEN`: Your Discord bot token[m
+[31m-- `MONGODB_URI`: MongoDB connection string[m
+[31m-- `MONGODB_DB_NAME`: Name of your MongoDB database[m
+[31m-- `DEBUG_MODE`: Set to `True` to enable debug logging (default: `False`)[m
+[31m-- `PERFORMANCE_MODE`: Set to `HIGH`, `MEDIUM`, or `LOW` (default: `MEDIUM`)[m
+[31m-- `SHARD_COUNT`: Number of shards to use (default: `1`)[m
+[31m-- `CLUSTER_ID`: Cluster ID for multi-process setups (default: `0`)[m
+[32m+[m[32m### VPS/Dedicated Server[m
+[32m+[m[32mFor production use, we recommend:[m
+[32m+[m[32m- A VPS with at least 1GB RAM[m
+[32m+[m[32m- Setting up a systemd service for auto-restart[m
+[32m+[m[32m- Using a monitoring solution like PM2[m
+ [m
+ ## Contributing[m
+ [m

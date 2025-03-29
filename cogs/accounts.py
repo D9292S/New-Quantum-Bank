@@ -1,33 +1,30 @@
-import discord
-from discord.ext import commands
 import asyncio
-from datetime import datetime, timedelta, timezone
-from cogs.mongo import Database, DatabaseError, ValidationError, ConnectionError
+import io
+import logging
+import random
+from datetime import datetime, timedelta
+from typing import Any, Optional
+
+import discord
+import requests
+from discord.ext import commands, tasks
+from PIL import Image, ImageDraw, ImageFont
+
+from cogs.mongo import ConnectionError, DatabaseError, ValidationError
 from helper.exceptions import (
-    AccountError as HelperAccountError, 
+    AccountAlreadyExistsError,
     AccountNotFoundError,
     AccountTypeError,
-    AccountAlreadyExistsError,
-    InsufficientFundsError, 
-    TransactionLimitError, 
+    CreditScoreError,
+    InsufficientCreditScoreError,
+    InsufficientFundsError,
     InvalidTransactionError,
+    LoanAlreadyExistsError,
     LoanError,
     LoanLimitError,
     LoanRepaymentError,
-    LoanAlreadyExistsError,
-    CreditScoreError,
-    InsufficientCreditScoreError
+    TransactionLimitError,
 )
-from PIL import Image, ImageDraw, ImageFont
-import io
-import requests
-import logging
-from functools import lru_cache
-from typing import Optional, Dict, Any
-import time
-from cogs.error_handler import ErrorHandler
-from discord.ext import tasks
-import random
 
 # Cache configuration
 CACHE_TTL = 300  # 5 minutes cache TTL
@@ -225,8 +222,9 @@ class Account(commands.Cog):
 
     async def _establish_direct_connection(self):
         """Establish a direct connection to MongoDB"""
-        from motor.motor_asyncio import AsyncIOMotorClient
         import os
+
+        from motor.motor_asyncio import AsyncIOMotorClient
         
         # Get the MongoDB URI from environment
         mongo_uri = os.getenv("MONGO_URI")
@@ -1288,7 +1286,7 @@ class Account(commands.Cog):
         
         embed = discord.Embed(
             title="Loan Application Confirmation",
-            description=f"Please review your loan details before confirming:",
+            description="Please review your loan details before confirming:",
             color=discord.Color.gold()
         )
         
@@ -1444,7 +1442,7 @@ class Account(commands.Cog):
             if payment_result['fully_paid']:
                 embed = discord.Embed(
                     title="Loan Fully Repaid",
-                    description=f"Congratulations! You have fully repaid your loan.",
+                    description="Congratulations! You have fully repaid your loan.",
                     color=discord.Color.green()
                 )
                 
@@ -1569,7 +1567,7 @@ class Account(commands.Cog):
             
             embed = discord.Embed(
                 title=f"Loan Status - {status_text}",
-                description=f"Here are the details of your current loan:",
+                description="Here are the details of your current loan:",
                 color=title_color
             )
             

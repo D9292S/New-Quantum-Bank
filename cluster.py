@@ -6,17 +6,17 @@ This script runs multiple instances of the bot in separate processes,
 each handling a subset of the total shards for better performance.
 """
 
+import argparse
 import os
-import sys
-import time
-import json
 import signal
 import subprocess
-import argparse
-import psutil
+import sys
+import time
 from datetime import datetime, timedelta
 from threading import Thread
-from typing import List, Dict, Any, Optional
+from typing import Dict
+
+import psutil
 
 __version__ = "1.0.0"
 
