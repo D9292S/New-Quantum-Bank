@@ -5,7 +5,6 @@ import logging.handlers
 import os
 import platform
 import sys
-from collections import namedtuple
 from pathlib import Path
 from urllib.parse import quote_plus
 
@@ -517,10 +516,6 @@ def print_banner():
 
 
 # Don't call print_banner() at module level - it will be called in run_bot()
-
-def validate_env_variables():
-    """Validate environment variables and display warnings/errors as needed"""
-    # ... rest of validate_env_variables function ...
 
 # Don't call validate_env_variables() at module level - it will be called in run_bot()
 
