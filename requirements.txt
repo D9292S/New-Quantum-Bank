@@ -1,3 +1,22 @@
+# This project now uses uv package manager with pyproject.toml for dependencies.
+# Please use uv to install dependencies instead of pip:
+#
+# Install uv:
+#   curl -LsSf https://astral.sh/uv/install.sh | sh
+#   
+# For Windows:
+#   powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+#
+# Install dependencies:
+#   uv venv
+#   uv pip install -e "."
+#
+# For development dependencies:
+#   uv pip install -e ".[development]"
+#
+# The requirements below are kept for compatibility but may not be up-to-date.
+# Please refer to pyproject.toml for the most current dependencies.
+
 discord.py>=2.0.0
 motor>=3.0.0
 pymongo>=4.0.0

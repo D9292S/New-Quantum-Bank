@@ -33,6 +33,7 @@ ENV/
 env/
 .env/
 .venv/
+.uv/
 
 # IDE specific files
 .idea/
@@ -56,6 +57,9 @@ tokens.json
 credentials.json
 secret_key.json
 user_data/
+temp/
+cache/
+data/
 
 # Testing
 .coverage
@@ -66,6 +70,7 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
+.ruff_cache/
 
 # Distribution / packaging
 .Python
@@ -130,6 +135,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+site/
 
 # PyBuilder
 .pybuilder/

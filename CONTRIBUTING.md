@@ -37,15 +37,21 @@ By participating in this project, you agree to uphold our Code of Conduct, which
 ## Development Setup
 
 1. Fork and clone the repository
-2. Create a virtual environment:
+2. Install uv if you don't have it yet:
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
-3. Install dependencies:
+   Or on Windows:
    ```bash
-   pip install -r requirements.txt
+   powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
    ```
+
+3. Create a virtual environment and install dependencies:
+   ```bash
+   uv venv
+   uv pip install -e ".[development]"
+   ```
+
 4. Copy `.env.example` to `.env` and fill in the required values
 5. Run the bot:
    ```bash
@@ -61,6 +67,10 @@ By participating in this project, you agree to uphold our Code of Conduct, which
 - Use meaningful variable and function names
 - Add docstrings to modules, classes, and functions
 - Keep lines under 100 characters when possible
+- Run the linter before committing:
+  ```bash
+  ruff check .
+  ```
 
 ### Commit Messages
 
@@ -78,7 +88,10 @@ By participating in this project, you agree to uphold our Code of Conduct, which
 
 ## Testing
 
-- Run tests before submitting a pull request
+- Run tests before submitting a pull request:
+  ```bash
+  pytest
+  ```
 - Add tests for new features
 - Ensure existing tests pass with your changes
 

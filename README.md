@@ -1,165 +1,85 @@
 # Quantum Bank Discord Bot
 
-A feature-rich banking bot for Discord servers, offering virtual economy management with beautifully formatted outputs and robust database integration.
-
-![Quantum Bank Banner](https://example.com/quantum_bank_banner.png)
+Quantum Bank is a feature-rich Discord economy bot with advanced banking features, built using Discord.py and MongoDB.
 
 ## Features
 
-- **Virtual Economy System**: Complete banking system with accounts, transactions, and interest
-- **Advanced Logging**: Colorful, well-formatted console outputs with customizable verbosity
-- **MongoDB Integration**: Reliable data storage with automatic reconnection
-- **Performance Monitoring**: Track bot performance metrics
-- **Modular Architecture**: Extensible cog-based design
-- **Scalable Infrastructure**: Sharding and clustering support for large deployments
-- **Beautiful UI**: Colorful, readable interface for all bot outputs
+- 🏦 Complete banking system with accounts, transactions, and interest
+- 💹 Advanced economy features including investments and stock market simulation
+- 🎮 Economy-based minigames and activities
+- 🔒 Secure transactions with detailed logging
+- 📊 User-friendly statistics and leaderboards
+- 🎨 Colorful console logs with JSON formatting
+- 🔄 Seamless MongoDB integration for reliable data storage
+
+## Prerequisites
+
+- Python 3.8 or higher
+- MongoDB database (local or Atlas)
+- Discord Bot Token
 
 ## Installation
 
-### Prerequisites
-- Python 3.8 or higher
-- MongoDB database
-- Discord Bot Token
-
-### Quick Setup
-
-1. **Clone the repository**
+1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/quantum_bank.git
-   cd quantum_bank
+   git clone https://github.com/your-username/quantum-bank-bot.git
+   cd quantum-bank-bot
    ```
 
-2. **Install dependencies**
+2. Install uv if you don't have it yet:
    ```bash
-   pip install -r requirements.txt
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+   Or on Windows:
+   ```bash
+   powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
    ```
 
-3. **Create environment file**
+3. Create a virtual environment and install dependencies:
    ```bash
-   # Create .env file with the following variables:
+   uv venv
+   uv pip install -e "."
+   ```
+
+   For development setup, include development dependencies:
+   ```bash
+   uv pip install -e ".[development]"
+   ```
+
+4. Create a `.env` file in the root directory with the following variables:
+   ```
    BOT_TOKEN=your_discord_bot_token
-   MONGO_URI=your_mongodb_connection_string
-   # Optional:
-   MAL_CLIENT_ID=your_myanimelist_client_id
-   ACTIVITY_STATUS="Quantum Bank | /help"
+   MONGODB_URI=your_mongodb_connection_string
+   MONGODB_DB_NAME=your_database_name
    ```
 
-4. **Run the bot**
+5. Run the bot:
    ```bash
    python launcher.py
    ```
 
-## Command-Line Options
+## Configuration
 
-Quantum Bank can be configured with various command-line arguments:
+You can configure various aspects of the bot by modifying the appropriate values in your `.env` file:
 
-| Option | Description |
-|--------|-------------|
-| `--debug` | Enable debug mode |
-| `--log-level` | Logging verbosity: `quiet`, `normal`, `verbose`, `debug` |
-| `--performance` | Performance mode: `low`, `medium`, `high` |
-| `--shards` | Number of shards to use |
-| `--shardids` | Comma-separated list of shard IDs to run |
-| `--cluster` | Cluster ID for this instance |
-| `--clusters` | Total number of clusters |
+- `BOT_TOKEN`: Your Discord bot token
+- `MONGODB_URI`: MongoDB connection string
+- `MONGODB_DB_NAME`: Name of your MongoDB database
+- `DEBUG_MODE`: Set to `True` to enable debug logging (default: `False`)
+- `PERFORMANCE_MODE`: Set to `HIGH`, `MEDIUM`, or `LOW` (default: `MEDIUM`)
+- `SHARD_COUNT`: Number of shards to use (default: `1`)
+- `CLUSTER_ID`: Cluster ID for multi-process setups (default: `0`)
 
-Examples:
-```bash
-# Run with normal logging
-python launcher.py --log-level=normal
+## Contributing
 
-# Run with debug logging
-python launcher.py --log-level=debug
-
-# Run with high performance mode
-python launcher.py --performance=high
-
-# Run specific shards in a cluster
-python launcher.py --shards=10 --cluster=0 --clusters=3
-```
-
-## Logging System
-
-The bot features an advanced logging system with different verbosity levels:
-
-- **quiet**: Only shows warnings, errors, and critical information
-- **normal**: Shows important logs with intelligent filtering (default)
-- **verbose**: Shows all logs without filtering
-- **debug**: Shows all logs plus additional debugging information
-
-All logs are saved to the `logs` directory in separate files by category.
-
-## Bot Commands
-
-### Account Management
-- `/create` - Create a new bank account
-- `/balance` - Check your account balance
-- `/deposit` - Add funds to your account
-- `/withdraw` - Remove funds from your account
-- `/transfer` - Transfer funds to another user
-
-### Admin Commands
-- Various admin commands for server management and bot configuration
-
-### Utility Commands
-- `/help` - Display help information
-- Other utility commands for server management
-
-## Development
-
-### Project Structure
-```
-quantum_bank/
-├── bot.py                  # Bot instance definition
-├── launcher.py             # Entry point and configuration
-├── cogs/                   # Bot extensions
-│   ├── mongo.py            # Database connection
-│   ├── accounts.py         # Banking functionality
-│   ├── admin.py            # Admin commands
-│   ├── performance_monitor.py # Performance tracking
-│   └── utility.py          # Utility commands
-└── logs/                   # Log files
-    ├── bot.log             # Core bot operations
-    ├── commands.log        # Command executions
-    ├── database.log        # Database operations
-    ├── performance.log     # Performance metrics
-    └── errors.log          # Error messages
-```
-
-### Testing
-
-A comprehensive test checklist is available to verify all bot functionality:
-- Run `python launcher.py --log-level=verbose` for full output during testing
-- Check all command functionality
-- Verify database connectivity and persistence
-- Test error handling and recovery
-
-## Troubleshooting
-
-### Common Issues
-
-1. **MongoDB Connection Problems**
-   - Verify your MongoDB URI in the `.env` file
-   - Check network connectivity to your MongoDB instance
-   - Examine `logs/database.log` for detailed error information
-
-2. **Bot Not Responding to Commands**
-   - Ensure bot has proper permissions in Discord
-   - Check `logs/commands.log` for command processing issues
-   - Verify command registration in startup logs
-
-3. **High Resource Usage**
-   - Try running with `--performance=low` for reduced resource usage
-   - Check `logs/performance.log` for resource consumption patterns
-
-For additional issues, run with `--log-level=debug` to get more detailed diagnostic information.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgements
+## Acknowledgments
 
-- Discord.py library
-- MongoDB team
-- All contributors to this project
+- [Discord.py](https://github.com/Rapptz/discord.py)
+- [Motor](https://github.com/mongodb/motor)
+- All contributors who have helped to improve this project
