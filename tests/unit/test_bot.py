@@ -13,7 +13,7 @@ import pytest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import bot
-from launcher import Config
+from config import BotConfig
 
 
 @pytest.mark.unit
@@ -55,17 +55,17 @@ class TestBotBasics(unittest.TestCase):
         self.mock_init = self.init_patcher.start()
 
         # Create a test config
-        self.test_config = Config(
-            DEBUG=False,
-            BOT_TOKEN="test_token",
-            MONGO_URI="mongodb://localhost:27017",
-            MAL_CLIENT_ID=None,
-            ACTIVITY_STATUS="Testing",
-            SHARD_COUNT=1,
-            SHARD_IDS=None,
-            CLUSTER_ID=None,
-            TOTAL_CLUSTERS=None,
-            PERFORMANCE_MODE="low",
+        self.test_config = BotConfig(
+            bot_token="test_token",
+            mongo_uri="mongodb://localhost:27017",
+            activity_status="Testing",
+            debug=False,
+            mal_client_id=None,
+            performance_mode="low",
+            shard_count=1,
+            shard_ids=None,
+            cluster_id=None,
+            total_clusters=None,
         )
 
     def tearDown(self):
