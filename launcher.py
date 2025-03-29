@@ -6,6 +6,7 @@ import os
 import platform
 import sys
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 from urllib.parse import quote_plus
 
 import discord
@@ -36,7 +37,12 @@ class ColoredFormatter(logging.Formatter):
         "LIGHT_BLUE": "\033[94m",  # JSON punctuation
     }
 
-    def __init__(self, fmt=None, datefmt=None, style="%"):
+    def __init__(
+        self, 
+        fmt: Optional[str] = None, 
+        datefmt: Optional[str] = None, 
+        style: str = "%"
+    ) -> None:
         super().__init__(fmt, datefmt, style)
 
         # Define compact pattern transformations
@@ -74,7 +80,7 @@ class ColoredFormatter(logging.Formatter):
             ),
         ]
 
-    def _compact_message(self, message):
+    def _compact_message(self, message: str) -> str:
         """Transform verbose log messages into more compact forms"""
         import re
 
@@ -84,7 +90,7 @@ class ColoredFormatter(logging.Formatter):
 
         return message
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         # Save the original format
         format_orig = self._style._fmt
 
@@ -144,7 +150,7 @@ class ColoredFormatter(logging.Formatter):
 
         return result
 
-    def _format_json(self, message):
+    def _format_json(self, message: str) -> str:
         """Format JSON content with colors for better readability"""
         # If already compacted by _compact_message, don't format JSON
         if any(marker in message for marker in ["Gateway: ✓", "Finished loading all cogs in"]):
@@ -155,8 +161,16 @@ class ColoredFormatter(logging.Formatter):
         # Simple JSON formatting for remaining messages
         if "{" in message and "}" in message and ":" in message:
             # Format keys in cyan
-            message = re.sub(r"'([^']+)':", f"{self.COLORS['CYAN']}'\\1'{self.COLORS['RESET']}:", message)
-            message = re.sub(r'"([^"]+)":', f'{self.COLORS["CYAN"]}"\\1"{self.COLORS["RESET"]}:', message)
+            message = re.sub(
+                r"'([^']+)':", 
+                f"{self.COLORS['CYAN']}'\\1'{self.COLORS['RESET']}:", 
+                message
+            )
+            message = re.sub(
+                r'"([^"]+)":', 
+                f'{self.COLORS["CYAN"]}"\\1"{self.COLORS["RESET"]}:', 
+                message
+            )
 
             # Format string values in light green
             message = re.sub(
@@ -186,13 +200,16 @@ class ColoredFormatter(logging.Formatter):
 
             # Format braces and brackets with light blue
             for char in ["{", "}", "[", "]"]:
-                message = message.replace(char, f"{self.COLORS['LIGHT_BLUE']}{char}{self.COLORS['RESET']}")
+                message = message.replace(
+                    char, 
+                    f"{self.COLORS['LIGHT_BLUE']}{char}{self.COLORS['RESET']}"
+                )
 
         return message
 
 
 # Configure logging system before importing bot
-def setup_logging(log_level="normal"):
+def setup_logging(log_level: str = "normal") -> Dict[str, Dict[str, Any]]:
     """Configure advanced logging setup with categorized log files"""
     # Create logs directory if it doesn't exist
     logs_dir = Path("logs")
@@ -240,7 +257,7 @@ def setup_logging(log_level="normal"):
     class ImportantLogFilter(logging.Filter):
         """Filter to show only important logs in console"""
 
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__()
             # Messages to always show (high priority)
             self.important_patterns = [
@@ -302,7 +319,7 @@ def setup_logging(log_level="normal"):
                 "Reconnection failed",
             ]
 
-        def filter(self, record):
+        def filter(self, record: logging.LogRecord) -> bool:
             # Always show warnings, errors and critical logs
             if record.levelno >= logging.WARNING:
                 return True
@@ -326,7 +343,9 @@ def setup_logging(log_level="normal"):
                     return False
 
             # Special case: MongoDB connection logs - only show status changes
-            if "MongoDB" in message and not any(status in message for status in ["successful", "failed", "error"]):
+            if "MongoDB" in message and not any(
+                status in message for status in ["successful", "failed", "error"]
+            ):
                 return False
 
             # Special case: hide verbose session management logs
@@ -396,14 +415,19 @@ def setup_logging(log_level="normal"):
         # Also add ERROR level logs to the errors log
         if category != "errors":
             error_handler = logging.handlers.RotatingFileHandler(
-                logs_dir / "errors.log", maxBytes=5 * 1024 * 1024, backupCount=5, encoding="utf-8"
+                logs_dir / "errors.log", 
+                maxBytes=5 * 1024 * 1024, 
+                backupCount=5, 
+                encoding="utf-8"
             )
             error_handler.setFormatter(logging.Formatter(file_format, date_format))
             error_handler.setLevel(logging.ERROR)
             logger.addHandler(error_handler)
 
     # Log the configuration with colored output
-    logging.getLogger("bot").info(f"Logging system initialized with categories: {', '.join(log_categories.keys())}")
+    logging.getLogger("bot").info(
+        f"Logging system initialized with categories: {', '.join(log_categories.keys())}"
+    )
 
     # Return the list of categories for reference
     return log_categories
@@ -419,7 +443,7 @@ __version__ = "1.0.0"
 load_dotenv()
 
 
-def validate_env_variables():
+def validate_env_variables() -> bool:
     """Validate environment variables and display warnings/errors as needed"""
     warnings = []
     errors = []
@@ -431,17 +455,26 @@ def validate_env_variables():
     # Check MongoDB connection info
     if not os.getenv("MONGO_URI"):
         if not all(key in os.environ for key in ["MONGO_USER", "MONGO_PASS", "MONGO_HOST"]):
-            warnings.append("Neither MONGO_URI nor all components (MONGO_USER, MONGO_PASS, MONGO_HOST) are set. Database features will be limited.")
+            warnings.append(
+                "Neither MONGO_URI nor all components (MONGO_USER, MONGO_PASS, MONGO_HOST) are set. "
+                "Database features will be limited."
+            )
     
     # Validate performance mode if set
     if performance_mode := os.getenv("PERFORMANCE_MODE"):
         if performance_mode.lower() not in ["low", "medium", "high"]:
-            warnings.append(f"Invalid PERFORMANCE_MODE: '{performance_mode}'. Must be one of: low, medium, high. Using 'medium' as default.")
+            warnings.append(
+                f"Invalid PERFORMANCE_MODE: '{performance_mode}'. "
+                f"Must be one of: low, medium, high. Using 'medium' as default."
+            )
     
     # Validate log level if set
     if log_level := os.getenv("LOG_LEVEL"):
         if log_level.lower() not in ["quiet", "normal", "verbose", "debug"]:
-            warnings.append(f"Invalid LOG_LEVEL: '{log_level}'. Must be one of: quiet, normal, verbose, debug. Using 'normal' as default.")
+            warnings.append(
+                f"Invalid LOG_LEVEL: '{log_level}'. "
+                f"Must be one of: quiet, normal, verbose, debug. Using 'normal' as default."
+            )
     
     # Validate numeric values
     for var_name, var_desc in [
@@ -460,66 +493,68 @@ def validate_env_variables():
         warnings.append("CLUSTER_ID is set but TOTAL_CLUSTERS is missing. Clustering may not work correctly.")
     
     # Display warnings
-    COLORS = ColoredFormatter.COLORS
+    colors = ColoredFormatter.COLORS
     if warnings:
-        print(f"\n{COLORS['YELLOW']}{'=' * 80}{COLORS['RESET']}")
-        print(f"{COLORS['BOLD']}{COLORS['YELLOW']}⚠️  Environment Configuration Warnings:{COLORS['RESET']}")
+        print(f"\n{colors['YELLOW']}{'=' * 80}{colors['RESET']}")
+        print(f"{colors['BOLD']}{colors['YELLOW']}⚠️  Environment Configuration Warnings:{colors['RESET']}")
         for warning in warnings:
-            print(f"{COLORS['YELLOW']}  • {warning}{COLORS['RESET']}")
-        print(f"{COLORS['YELLOW']}{'=' * 80}{COLORS['RESET']}\n")
+            print(f"{colors['YELLOW']}  • {warning}{colors['RESET']}")
+        print(f"{colors['YELLOW']}{'=' * 80}{colors['RESET']}\n")
     
     # Display errors and exit if any
     if errors:
-        print(f"\n{COLORS['RED']}{'=' * 80}{COLORS['RESET']}")
-        print(f"{COLORS['BOLD']}{COLORS['RED']}❌ Environment Configuration Errors:{COLORS['RESET']}")
+        print(f"\n{colors['RED']}{'=' * 80}{colors['RESET']}")
+        print(f"{colors['BOLD']}{colors['RED']}❌ Environment Configuration Errors:{colors['RESET']}")
         for error in errors:
-            print(f"{COLORS['RED']}  • {error}{COLORS['RESET']}")
-        print(f"{COLORS['RED']}{'=' * 80}{COLORS['RESET']}\n")
-        print(f"{COLORS['YELLOW']}Please check your .env file or environment variables and try again.{COLORS['RESET']}")
+            print(f"{colors['RED']}  • {error}{colors['RESET']}")
+        print(f"{colors['RED']}{'=' * 80}{colors['RESET']}\n")
+        print(f"{colors['YELLOW']}Please check your .env file or environment variables and try again.{colors['RESET']}")
         sys.exit(1)
     
     if not warnings and not errors:
-        print(f"{COLORS['GREEN']}✓ Environment configuration validated successfully{COLORS['RESET']}")
+        print(f"{colors['GREEN']}✓ Environment configuration validated successfully{colors['RESET']}")
     
     return True
 
 
 # Function to print a cool banner with version info
-def print_banner():
+def print_banner() -> None:
     # ANSI color codes
-    COLORS = ColoredFormatter.COLORS
+    colors = ColoredFormatter.COLORS
 
     banner = f"""
-{COLORS["BLUE"]}  ██████╗ ██╗   ██╗ █████╗ ███╗   ██╗████████╗██╗   ██╗███╗   ███╗{COLORS["RESET"]}
-{COLORS["BLUE"]} ██╔═══██╗██║   ██║██╔══██╗████╗  ██║╚══██╔══╝██║   ██║████╗ ████║{COLORS["RESET"]}
-{COLORS["GREEN"]} ██║   ██║██║   ██║███████║██╔██╗ ██║   ██║   ██║   ██║██╔████╔██║{COLORS["RESET"]}
-{COLORS["GREEN"]} ██║▄▄ ██║██║   ██║██╔══██║██║╚██╗██║   ██║   ██║   ██║██║╚██╔╝██║{COLORS["RESET"]}
-{COLORS["YELLOW"]} ╚██████╔╝╚██████╔╝██║  ██║██║ ╚████║   ██║   ╚██████╔╝██║ ╚═╝ ██║{COLORS["RESET"]}
-{COLORS["YELLOW"]}  ╚══▀▀═╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝{COLORS["RESET"]}
+{colors["BLUE"]}  ██████╗ ██╗   ██╗ █████╗ ███╗   ██╗████████╗██╗   ██╗███╗   ███╗{colors["RESET"]}
+{colors["BLUE"]} ██╔═══██╗██║   ██║██╔══██╗████╗  ██║╚══██╔══╝██║   ██║████╗ ████║{colors["RESET"]}
+{colors["GREEN"]} ██║   ██║██║   ██║███████║██╔██╗ ██║   ██║   ██║   ██║██╔████╔██║{colors["RESET"]}
+{colors["GREEN"]} ██║▄▄ ██║██║   ██║██╔══██║██║╚██╗██║   ██║   ██║   ██║██║╚██╔╝██║{colors["RESET"]}
+{colors["YELLOW"]} ╚██████╔╝╚██████╔╝██║  ██║██║ ╚████║   ██║   ╚██████╔╝██║ ╚═╝ ██║{colors["RESET"]}
+{colors["YELLOW"]}  ╚══▀▀═╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝{colors["RESET"]}
 
-{COLORS["BOLD"]}{COLORS["GREEN"]}               ██████╗  █████╗ ███╗   ██╗██╗  ██╗{COLORS["RESET"]}
-{COLORS["BOLD"]}{COLORS["GREEN"]}               ██╔══██╗██╔══██╗████╗  ██║██║ ██╔╝{COLORS["RESET"]}
-{COLORS["BOLD"]}{COLORS["GREEN"]}               ██████╔╝███████║██╔██╗ ██║█████╔╝ {COLORS["RESET"]}
-{COLORS["BOLD"]}{COLORS["GREEN"]}               ██╔══██╗██╔══██║██║╚██╗██║██╔═██╗ {COLORS["RESET"]}
-{COLORS["BOLD"]}{COLORS["GREEN"]}               ██████╔╝██║  ██║██║ ╚████║██║  ██╗{COLORS["RESET"]}
-{COLORS["BOLD"]}{COLORS["GREEN"]}               ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝{COLORS["RESET"]}
+{colors["BOLD"]}{colors["GREEN"]}               ██████╗  █████╗ ███╗   ██╗██╗  ██╗{colors["RESET"]}
+{colors["BOLD"]}{colors["GREEN"]}               ██╔══██╗██╔══██╗████╗  ██║██║ ██╔╝{colors["RESET"]}
+{colors["BOLD"]}{colors["GREEN"]}               ██████╔╝███████║██╔██╗ ██║█████╔╝ {colors["RESET"]}
+{colors["BOLD"]}{colors["GREEN"]}               ██╔══██╗██╔══██║██║╚██╗██║██╔═██╗ {colors["RESET"]}
+{colors["BOLD"]}{colors["GREEN"]}               ██████╔╝██║  ██║██║ ╚████║██║  ██╗{colors["RESET"]}
+{colors["BOLD"]}{colors["GREEN"]}               ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝{colors["RESET"]}
     """
 
     print(banner)
     print(
-        f"{COLORS['BOLD']}⚡ {COLORS['BLUE']}Quantum Bank Bot{COLORS['RESET']} {COLORS['GREEN']}v{__version__}{COLORS['RESET']}"
+        f"{colors['BOLD']}⚡ {colors['BLUE']}Quantum Bank Bot{colors['RESET']} "
+        f"{colors['GREEN']}v{__version__}{colors['RESET']}"
     )
     print(
-        f"{COLORS['GRAY']}Running on {COLORS['BLUE']}Python {platform.python_version()}{COLORS['RESET']} | {COLORS['YELLOW']}{platform.system()} {platform.release()}{COLORS['RESET']}"
+        f"{colors['GRAY']}Running on {colors['BLUE']}Python {platform.python_version()}{colors['RESET']} | "
+        f"{colors['YELLOW']}{platform.system()} {platform.release()}{colors['RESET']}"
     )
-    print(f"{COLORS['GRAY']}─────────────────────────────────────────────────────────────{COLORS['RESET']}")
+    print(f"{colors['GRAY']}─────────────────────────────────────────────────────────────{colors['RESET']}")
 
 
 # Don't call print_banner() at module level - it will be called in run_bot()
 
 # Don't call validate_env_variables() at module level - it will be called in run_bot()
 
-def parse_arguments():
+def parse_arguments() -> argparse.Namespace:
     """Parse command line arguments for advanced configuration"""
     parser = argparse.ArgumentParser(
         description="Quantum Bank Discord Bot - A feature-rich Discord economy bot with advanced banking features",
@@ -540,17 +575,24 @@ def parse_arguments():
         "--log-level",
         choices=["quiet", "normal", "verbose", "debug"],
         default="normal",
-        help="Logging verbosity (quiet: critical logs only, normal: balanced, verbose: all logs, debug: all logs with debugging info)",
+        help=(
+            "Logging verbosity (quiet: critical logs only, normal: balanced, "
+            "verbose: all logs, debug: all logs with debugging info)"
+        ),
     )
     parser.add_argument(
-        "--version", "-v", action="store_true", 
+        "--version", "-v", action="store_true",
         help="Show version information and exit"
     )
 
     return parser.parse_args()
 
 
-def calculate_shards_for_cluster(cluster_id, total_clusters, total_shards):
+def calculate_shards_for_cluster(
+    cluster_id: int, 
+    total_clusters: int, 
+    total_shards: int
+) -> List[int]:
     """Calculate which shards this cluster should handle"""
     shards_per_cluster = total_shards // total_clusters
     remainder = total_shards % total_clusters
@@ -571,20 +613,20 @@ def calculate_shards_for_cluster(cluster_id, total_clusters, total_shards):
     return list(range(start_shard, end_shard + 1))
 
 
-def display_error(message, exit_code=None):
+def display_error(message: str, exit_code: Optional[int] = None) -> None:
     """Display an error message in a highly visible format"""
-    COLORS = ColoredFormatter.COLORS
-    border = f"{COLORS['RED']}{'═' * 80}{COLORS['RESET']}"
+    colors = ColoredFormatter.COLORS
+    border = f"{colors['RED']}{'═' * 80}{colors['RESET']}"
 
     print("\n" + border)
-    print(f"{COLORS['BOLD']}{COLORS['RED']} ❌ ERROR: {message}{COLORS['RESET']}")
+    print(f"{colors['BOLD']}{colors['RED']} ❌ ERROR: {message}{colors['RESET']}")
     print(border + "\n")
 
     if exit_code is not None:
         sys.exit(exit_code)
 
 
-def run_bot():
+def run_bot() -> int:
     """Run the bot - synchronous entry point"""
     # Check Python version
     if sys.version_info < (3, 8):
@@ -627,7 +669,8 @@ def run_bot():
                     os.environ["MONGO_HOST"],
                 )
                 print(
-                    f"{ColoredFormatter.COLORS['GREEN']}Constructed MongoDB URI from individual components{ColoredFormatter.COLORS['RESET']}"
+                    f"{ColoredFormatter.COLORS['GREEN']}Constructed MongoDB URI "
+                    f"from individual components{ColoredFormatter.COLORS['RESET']}"
                 )
     except ConfigurationError as e:
         display_error(f"Configuration error: {e}", 1)
@@ -642,14 +685,20 @@ def run_bot():
             config.cluster_id, config.total_clusters, config.shard_count
         )
         print(
-            f"{ColoredFormatter.COLORS['BLUE']}Cluster {ColoredFormatter.COLORS['BOLD']}{config.cluster_id}/{config.total_clusters}{ColoredFormatter.COLORS['RESET']} "
-            f"{ColoredFormatter.COLORS['BLUE']}running shards: {ColoredFormatter.COLORS['BOLD']}{config.shard_ids}{ColoredFormatter.COLORS['RESET']}"
+            f"{ColoredFormatter.COLORS['BLUE']}Cluster "
+            f"{ColoredFormatter.COLORS['BOLD']}{config.cluster_id}/{config.total_clusters}"
+            f"{ColoredFormatter.COLORS['RESET']} "
+            f"{ColoredFormatter.COLORS['BLUE']}running shards: "
+            f"{ColoredFormatter.COLORS['BOLD']}{config.shard_ids}{ColoredFormatter.COLORS['RESET']}"
         )
 
     # Performance mode configuration
     if config.performance_mode == "high":
         print(
-            f"{ColoredFormatter.COLORS['GREEN']}Using {ColoredFormatter.COLORS['BOLD']}HIGH{ColoredFormatter.COLORS['RESET']} {ColoredFormatter.COLORS['GREEN']}performance mode - maximizing resource usage{ColoredFormatter.COLORS['RESET']}"
+            f"{ColoredFormatter.COLORS['GREEN']}Using "
+            f"{ColoredFormatter.COLORS['BOLD']}HIGH{ColoredFormatter.COLORS['RESET']} "
+            f"{ColoredFormatter.COLORS['GREEN']}performance mode - "
+            f"maximizing resource usage{ColoredFormatter.COLORS['RESET']}"
         )
         # Try to load optional high-performance libraries
         try:
@@ -658,12 +707,14 @@ def run_bot():
             if not sys.platform.startswith("win"):
                 # uvloop doesn't work on Windows
                 print(
-                    f"{ColoredFormatter.COLORS['GREEN']}✓ Using uvloop for improved event loop performance{ColoredFormatter.COLORS['RESET']}"
+                    f"{ColoredFormatter.COLORS['GREEN']}✓ Using uvloop for improved "
+                    f"event loop performance{ColoredFormatter.COLORS['RESET']}"
                 )
                 uvloop.install()
         except ImportError:
             print(
-                f"{ColoredFormatter.COLORS['YELLOW']}✗ uvloop not available - using standard asyncio event loop{ColoredFormatter.COLORS['RESET']}"
+                f"{ColoredFormatter.COLORS['YELLOW']}✗ uvloop not available - "
+                f"using standard asyncio event loop{ColoredFormatter.COLORS['RESET']}"
             )
 
         # Try to use orjson for faster JSON processing
@@ -672,21 +723,29 @@ def run_bot():
 
             if importlib.util.find_spec("orjson"):
                 print(
-                    f"{ColoredFormatter.COLORS['GREEN']}✓ Using orjson for improved JSON performance{ColoredFormatter.COLORS['RESET']}"
+                    f"{ColoredFormatter.COLORS['GREEN']}✓ Using orjson for improved "
+                    f"JSON performance{ColoredFormatter.COLORS['RESET']}"
                 )
         except ImportError:
             print(
-                f"{ColoredFormatter.COLORS['YELLOW']}✗ orjson not available - using standard json module{ColoredFormatter.COLORS['RESET']}"
+                f"{ColoredFormatter.COLORS['YELLOW']}✗ orjson not available - "
+                f"using standard json module{ColoredFormatter.COLORS['RESET']}"
             )
 
     elif config.performance_mode == "low":
         print(
-            f"{ColoredFormatter.COLORS['BLUE']}Using {ColoredFormatter.COLORS['BOLD']}LOW{ColoredFormatter.COLORS['RESET']} {ColoredFormatter.COLORS['BLUE']}performance mode - minimizing resource usage{ColoredFormatter.COLORS['RESET']}"
+            f"{ColoredFormatter.COLORS['BLUE']}Using "
+            f"{ColoredFormatter.COLORS['BOLD']}LOW{ColoredFormatter.COLORS['RESET']} "
+            f"{ColoredFormatter.COLORS['BLUE']}performance mode - "
+            f"minimizing resource usage{ColoredFormatter.COLORS['RESET']}"
         )
         # Configure for minimal resource usage
     else:
         print(
-            f"{ColoredFormatter.COLORS['BLUE']}Using {ColoredFormatter.COLORS['BOLD']}MEDIUM{ColoredFormatter.COLORS['RESET']} {ColoredFormatter.COLORS['BLUE']}performance mode - balanced resource usage{ColoredFormatter.COLORS['RESET']}"
+            f"{ColoredFormatter.COLORS['BLUE']}Using "
+            f"{ColoredFormatter.COLORS['BOLD']}MEDIUM{ColoredFormatter.COLORS['RESET']} "
+            f"{ColoredFormatter.COLORS['BLUE']}performance mode - "
+            f"balanced resource usage{ColoredFormatter.COLORS['RESET']}"
         )
 
     # Print configuration summary
@@ -696,21 +755,32 @@ def run_bot():
 
     if summary["shard_count"] > 1:
         print(
-            f"{ColoredFormatter.COLORS['BLUE']}Bot will use {ColoredFormatter.COLORS['BOLD']}{summary['shard_count']}{ColoredFormatter.COLORS['RESET']} {ColoredFormatter.COLORS['BLUE']}shards{ColoredFormatter.COLORS['RESET']}"
+            f"{ColoredFormatter.COLORS['BLUE']}Bot will use "
+            f"{ColoredFormatter.COLORS['BOLD']}{summary['shard_count']}"
+            f"{ColoredFormatter.COLORS['RESET']} "
+            f"{ColoredFormatter.COLORS['BLUE']}shards{ColoredFormatter.COLORS['RESET']}"
         )
         if summary["shard_ids"]:
             print(
-                f"{ColoredFormatter.COLORS['BLUE']}This instance will run shards: {ColoredFormatter.COLORS['BOLD']}{summary['shard_ids']}{ColoredFormatter.COLORS['RESET']}"
+                f"{ColoredFormatter.COLORS['BLUE']}This instance will run shards: "
+                f"{ColoredFormatter.COLORS['BOLD']}{summary['shard_ids']}"
+                f"{ColoredFormatter.COLORS['RESET']}"
             )
 
     if summary["is_clustered"]:
         print(
-            f"{ColoredFormatter.COLORS['BLUE']}Running as cluster {ColoredFormatter.COLORS['BOLD']}{summary['cluster_id']}{ColoredFormatter.COLORS['RESET']} {ColoredFormatter.COLORS['BLUE']}of {ColoredFormatter.COLORS['BOLD']}{summary['total_clusters']}{ColoredFormatter.COLORS['RESET']}"
+            f"{ColoredFormatter.COLORS['BLUE']}Running as cluster "
+            f"{ColoredFormatter.COLORS['BOLD']}{summary['cluster_id']}"
+            f"{ColoredFormatter.COLORS['RESET']} "
+            f"{ColoredFormatter.COLORS['BLUE']}of "
+            f"{ColoredFormatter.COLORS['BOLD']}{summary['total_clusters']}"
+            f"{ColoredFormatter.COLORS['RESET']}"
         )
 
     if not summary["mal_client_id_set"]:
         print(
-            f"{ColoredFormatter.COLORS['YELLOW']}WARNING: MAL_CLIENT_ID not set, anime commands will be disabled{ColoredFormatter.COLORS['RESET']}"
+            f"{ColoredFormatter.COLORS['YELLOW']}WARNING: MAL_CLIENT_ID not set, "
+            f"anime commands will be disabled{ColoredFormatter.COLORS['RESET']}"
         )
 
     # Set up intents
@@ -747,10 +817,13 @@ def run_bot():
 
         # Run the bot - this creates its own event loop
         print(
-            f"\n{ColoredFormatter.COLORS['BOLD']}{ColoredFormatter.COLORS['GREEN']}Starting Quantum Bank bot v{__version__}...{ColoredFormatter.COLORS['RESET']}"
+            f"\n{ColoredFormatter.COLORS['BOLD']}{ColoredFormatter.COLORS['GREEN']}"
+            f"Starting Quantum Bank bot v{__version__}...{ColoredFormatter.COLORS['RESET']}"
         )
         print(
-            f"{ColoredFormatter.COLORS['GRAY']}─────────────────────────────────────────────────────────────{ColoredFormatter.COLORS['RESET']}"
+            f"{ColoredFormatter.COLORS['GRAY']}"
+            f"─────────────────────────────────────────────────────────────"
+            f"{ColoredFormatter.COLORS['RESET']}"
         )
         bot_instance.run()
     except Exception as e:
