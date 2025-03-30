@@ -17,12 +17,17 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
+        python-version: '3.12'
 
-    - name: Install dependencies
+    - name: Install UV and security tools
       run: |
         python -m pip install --upgrade pip
-        pip install bandit safety
+        pip install uv
+        uv pip install --system bandit safety
+
+    - name: Install project with UV
+      run: |
+        uv pip install -e . --system
 
     - name: Run Bandit security scan
       run: |
@@ -30,7 +35,9 @@ jobs:
 
     - name: Check for vulnerabilities in dependencies
       run: |
-        safety check
+        # Use UV to sync dependencies to a file safety can check
+        uv pip freeze > safety-check-deps.txt
+        safety check --file safety-check-deps.txt
 
     - name: Upload bandit scan results
       uses: actions/upload-artifact@v4

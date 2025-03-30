@@ -37,6 +37,10 @@ dependencies = [
     "psutil>=5.9.0,<8.0.0",
     "expiringdict>=1.2.2,<2.0.0",
     "mongomock>=4.1.2,<5.0.0",
+    "requests>=2.28.0,<3.0.0",
+    "matplotlib>=3.5.0,<4.0.0",
+    "msgpack>=1.0.3,<2.0.0",
+    "Pillow>=10.0.0,<11.0.0",
 ]
 
 [project.optional-dependencies]
