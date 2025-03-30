@@ -9,6 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       matrix:
         python-version: [3.12]
@@ -29,7 +30,7 @@ jobs:
 
     - name: Run tests
       run: |
-        pytest tests/ --cov=./ --cov-report=xml
+        pytest tests/unit/ --cov=./ --cov-report=xml -v
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
