@@ -2,7 +2,6 @@ import asyncio
 import hashlib
 import json
 import logging
-import base64
 import time
 import zlib
 from collections.abc import Callable
@@ -152,7 +151,7 @@ class CacheManager:
                         try:
                             # Use JSON instead of pickle for security
                             decompressed = zlib.decompress(value)
-                            value = json.loads(decompressed.decode('utf-8'))
+                            value = json.loads(decompressed.decode("utf-8"))
                         except Exception as e:
                             logger.error(f"Error decompressing cache data: {e}")
                             value = None
@@ -225,9 +224,9 @@ class CacheManager:
                                 return str(obj)
                             except:
                                 return str(obj)
-                        
+
                         json_data = json.dumps(mongo_value, default=serialize_fallback)
-                        mongo_value = zlib.compress(json_data.encode('utf-8'))
+                        mongo_value = zlib.compress(json_data.encode("utf-8"))
                     except Exception as e:
                         logger.error(f"Error compressing cache data: {e}")
 
@@ -301,7 +300,7 @@ class CacheManager:
         # Calculate memory usage without pickle
         memory_usage = sum(
             len(json.dumps(item, default=lambda o: str(o)).encode())
-            for namespace in self._memory_cache.values() 
+            for namespace in self._memory_cache.values()
             for item in namespace.values()
         )
 

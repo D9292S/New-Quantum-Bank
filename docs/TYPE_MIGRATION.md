@@ -77,7 +77,7 @@ We'll standardize on these common types:
 # Discord types
 from discord.ext.commands import Bot, Context, Cog
 from discord import (
-    User, Member, Guild, TextChannel, VoiceChannel, 
+    User, Member, Guild, TextChannel, VoiceChannel,
     Message, Embed, Interaction
 )
 
@@ -87,7 +87,7 @@ from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
 
 # Utility types
 from typing import (
-    Dict, List, Set, Tuple, Optional, Union, Any, 
+    Dict, List, Set, Tuple, Optional, Union, Any,
     Callable, Awaitable, TypeVar, Generic, cast,
     Protocol, Literal
 )
@@ -144,4 +144,4 @@ For areas where static typing is difficult:
 - [MyPy Cheat Sheet](https://mypy.readthedocs.io/en/stable/cheat_sheet_py3.html)
 - [PEP 484 - Type Hints](https://peps.python.org/pep-0484/)
 - [PEP 585 - Type Hinting Generics In Standard Collections](https://peps.python.org/pep-0585/)
-- [PEP 604 - Allow writing union types as X | Y](https://peps.python.org/pep-0604/) 
+- [PEP 604 - Allow writing union types as X | Y](https://peps.python.org/pep-0604/)

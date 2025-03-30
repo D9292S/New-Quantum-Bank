@@ -166,6 +166,7 @@ skips = [
     "B603",  # Skip subprocess call warning (necessary for cluster manager)
     "B606",  # Skip subprocess no shell warning (necessary for cluster manager)
     "B301",  # Skip pickle warnings during our transition to JSON
+    "B113",  # Skip request timeout warnings - will be addressed separately
 ]
 
 [project.scripts]

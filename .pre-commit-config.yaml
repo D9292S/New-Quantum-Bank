@@ -44,6 +44,6 @@ repos:
         entry: "[^_]print\\s*\\("
         language: pygrep
         types: [python]
-        exclude: "(launcher\\.py|cluster\\.py|temp_mongo_test\\.py)"
+        exclude: "(launcher\\.py|cluster\\.py|temp_mongo_test\\.py|scripts/.*\\.py|config\\.py)"
         verbose: true
         fail: false

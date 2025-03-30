@@ -787,9 +787,9 @@ class Database(commands.Cog):
             self.logger.info({"event": "Database connection closed", "level": "info"})
         except Exception as e:
             # Log the error instead of silently ignoring it
-            self.logger.warning({"event": "Failed to cleanly close database connection", 
-                                "error": str(e), 
-                                "level": "warning"})
+            self.logger.warning(
+                {"event": "Failed to cleanly close database connection", "error": str(e), "level": "warning"}
+            )
             # Still proceed with unloading
 
     def _validate_id(self, id_str: str) -> bool:
