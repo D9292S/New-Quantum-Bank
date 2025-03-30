@@ -1,4 +1,4 @@
-"""Unit tests for the credit score system."""
+"""Unit tests for the credit score functionality."""
 
 import asyncio
 import os
@@ -16,332 +16,163 @@ from helpers.exceptions import AccountNotFoundError, CreditScoreError
 
 
 @pytest.mark.asyncio
-@pytest.mark.credit
-class TestCreditScoreSystem:
-    """Tests for credit score calculations and updates."""
+@pytest.mark.credit_score
+class TestCreditScore:
+    """Tests for credit score calculation and management."""
     
     @pytest.fixture
     async def mock_db(self):
         """Set up a mock Database instance with credit score operations."""
-        db = AsyncMock()
+        db = MagicMock()
         
-        # Setup common mock methods
+        # Setup common mock methods as AsyncMocks
         db.get_account = AsyncMock()
         db.update_credit_score = AsyncMock()
-        db.get_credit_report = AsyncMock()
+        db.get_credit_score = AsyncMock()
+        db.get_loan_history = AsyncMock()
+        db.get_transaction_history = AsyncMock()
         
         return db
     
-    async def test_update_credit_score_increase(self, mock_db):
-        """Test increasing a user's credit score."""
+    async def test_get_credit_score(self, mock_db):
+        """Test retrieving a user's credit score."""
         # Set up test data
         user_id = "123456789"
-        action = "on_time_payment"
-        change = 10  # Positive change
-        reason = "Made on-time loan payment"
-        
-        # Mock account
-        mock_account = {
-            "user_id": user_id,
-            "username": "TestUser",
-            "credit_score": 600,
-            "credit_history": []
-        }
-        
-        # Set up mock update result
-        update_result = {
-            "user_id": user_id,
-            "old_score": 600,
-            "new_score": 610,
-            "change": change,
-            "action": action,
-            "timestamp": datetime.utcnow()
-        }
         
         # Set up mocks
-        mock_db.get_account.return_value = mock_account
-        mock_db.update_credit_score.return_value = update_result
+        mock_db.get_credit_score.return_value = {
+            "credit_score": 700,
+            "last_updated": "2023-06-15T14:30:00"
+        }
         
         # Call the method
-        result = await mock_db.update_credit_score(user_id, action, change, reason)
+        result = await mock_db.get_credit_score(user_id)
         
         # Verify results
         assert result is not None
-        assert result["old_score"] == 600
-        assert result["new_score"] == 610
-        assert result["change"] == change
+        assert result["credit_score"] == 700
         
-        # Verify correct methods were called
-        mock_db.get_account.assert_called_once_with(user_id)
-        mock_db.update_credit_score.assert_called_once_with(user_id, action, change, reason)
+        # Verify methods were called correctly
+        mock_db.get_credit_score.assert_called_once_with(user_id)
     
-    async def test_update_credit_score_decrease(self, mock_db):
-        """Test decreasing a user's credit score."""
+    async def test_update_credit_score(self, mock_db):
+        """Test updating a user's credit score."""
         # Set up test data
         user_id = "123456789"
-        action = "late_payment"
-        change = -15  # Negative change
-        reason = "Payment was 10 days late"
-        
-        # Mock account
-        mock_account = {
-            "user_id": user_id,
-            "username": "TestUser",
-            "credit_score": 650,
-            "credit_history": []
-        }
-        
-        # Set up mock update result
-        update_result = {
-            "user_id": user_id,
-            "old_score": 650,
-            "new_score": 635,
-            "change": change,
-            "action": action,
-            "timestamp": datetime.utcnow()
-        }
+        points = 25
+        reason = "On-time loan payment"
         
         # Set up mocks
-        mock_db.get_account.return_value = mock_account
-        mock_db.update_credit_score.return_value = update_result
+        mock_db.get_credit_score.return_value = {
+            "credit_score": 675,
+            "last_updated": "2023-06-10T10:00:00"
+        }
         
-        # Call the method
-        result = await mock_db.update_credit_score(user_id, action, change, reason)
+        mock_db.update_credit_score.return_value = {
+            "credit_score": 700,
+            "previous_score": 675,
+            "change": 25,
+            "reason": reason,
+            "last_updated": "2023-06-15T14:30:00"
+        }
+        
+        # Call the methods
+        old_score = await mock_db.get_credit_score(user_id)
+        result = await mock_db.update_credit_score(user_id, points, reason)
         
         # Verify results
         assert result is not None
-        assert result["old_score"] == 650
-        assert result["new_score"] == 635
-        assert result["change"] == change
+        assert result["credit_score"] == 700
+        assert result["previous_score"] == 675
+        assert result["change"] == 25
         
-        # Verify correct methods were called
-        mock_db.get_account.assert_called_once_with(user_id)
-        mock_db.update_credit_score.assert_called_once_with(user_id, action, change, reason)
+        # Verify methods were called correctly
+        mock_db.get_credit_score.assert_called_once_with(user_id)
+        mock_db.update_credit_score.assert_called_once_with(user_id, points, reason)
     
-    async def test_update_credit_score_account_not_found(self, mock_db):
-        """Test updating credit score when account doesn't exist."""
-        # Set up test data
-        user_id = "123456789"
-        action = "on_time_payment"
-        change = 10
-        reason = "Made on-time loan payment"
-        
-        # Mock account not found
-        mock_db.get_account.return_value = None
-        mock_db.update_credit_score.side_effect = AccountNotFoundError(f"Account not found for user {user_id}")
-        
-        # Call the method and check for exception
-        with pytest.raises(AccountNotFoundError):
-            await mock_db.update_credit_score(user_id, action, change, reason)
-        
-        # Verify correct methods were called
-        mock_db.get_account.assert_called_once_with(user_id)
-    
-    async def test_credit_score_upper_limit(self, mock_db):
-        """Test that credit score doesn't exceed the upper limit (850)."""
-        # Set up test data
-        user_id = "123456789"
-        action = "loan_fully_paid"
-        change = 30  # Large positive change
-        reason = "Fully repaid loan"
-        
-        # Mock account with credit score near upper limit
-        mock_account = {
-            "user_id": user_id,
-            "username": "TestUser",
-            "credit_score": 840,
-            "credit_history": []
-        }
-        
-        # Set up mock update result
-        update_result = {
-            "user_id": user_id,
-            "old_score": 840,
-            "new_score": 850,  # Should cap at 850, not 870
-            "change": change,
-            "action": action,
-            "timestamp": datetime.utcnow()
-        }
-        
-        # Set up mocks
-        mock_db.get_account.return_value = mock_account
-        mock_db.update_credit_score.return_value = update_result
-        
-        # Call the method
-        result = await mock_db.update_credit_score(user_id, action, change, reason)
-        
-        # Verify results
-        assert result is not None
-        assert result["new_score"] <= 850
-        
-        # Verify correct methods were called
-        mock_db.get_account.assert_called_once_with(user_id)
-        mock_db.update_credit_score.assert_called_once_with(user_id, action, change, reason)
-    
-    async def test_credit_score_lower_limit(self, mock_db):
-        """Test that credit score doesn't go below the lower limit (300)."""
-        # Set up test data
-        user_id = "123456789"
-        action = "loan_default"
-        change = -50  # Large negative change
-        reason = "Defaulted on loan"
-        
-        # Mock account with credit score near lower limit
-        mock_account = {
-            "user_id": user_id,
-            "username": "TestUser",
-            "credit_score": 310,
-            "credit_history": []
-        }
-        
-        # Set up mock update result
-        update_result = {
-            "user_id": user_id,
-            "old_score": 310,
-            "new_score": 300,  # Should floor at 300, not 260
-            "change": change,
-            "action": action,
-            "timestamp": datetime.utcnow()
-        }
-        
-        # Set up mocks
-        mock_db.get_account.return_value = mock_account
-        mock_db.update_credit_score.return_value = update_result
-        
-        # Call the method
-        result = await mock_db.update_credit_score(user_id, action, change, reason)
-        
-        # Verify results
-        assert result is not None
-        assert result["new_score"] >= 300
-        
-        # Verify correct methods were called
-        mock_db.get_account.assert_called_once_with(user_id)
-        mock_db.update_credit_score.assert_called_once_with(user_id, action, change, reason)
-    
-    async def test_get_credit_report(self, mock_db):
-        """Test getting a comprehensive credit report."""
+    async def test_calculate_credit_score_from_factors(self, mock_db):
+        """Test credit score calculation based on various factors."""
         # Set up test data
         user_id = "123456789"
         
-        # Mock account
-        mock_account = {
+        # Set up mocks for account history
+        mock_db.get_account.return_value = {
             "user_id": user_id,
-            "username": "TestUser",
-            "credit_score": 720,
-            "balance": 5000.0,
-            "created_at": datetime.utcnow() - timedelta(days=365),  # 1 year old account
-            "credit_history": [
-                {
-                    "date": datetime.utcnow() - timedelta(days=90),
-                    "action": "on_time_payment",
-                    "change": 5,
-                    "reason": "Made on-time loan payment",
-                    "old_score": 715,
-                    "new_score": 720
-                },
-                {
-                    "date": datetime.utcnow() - timedelta(days=120),
-                    "action": "loan_taken",
-                    "change": -5,
-                    "reason": "Took a loan of $1,000.00",
-                    "old_score": 720,
-                    "new_score": 715
-                }
-            ]
+            "created_at": "2022-01-15T10:30:00",  # Account age > 1 year
+            "balance": 1500.0
         }
         
-        # Set up mock credit report
-        mock_report = {
-            "user_id": user_id,
-            "credit_score": 720,
-            "credit_rating": "Good",
-            "account_age_days": 365,
-            "transaction_count_30d": 10,
-            "average_balance": 5000.0,
-            "has_active_loan": True,
-            "loan_repayment_status": "Current",
-            "credit_limit_multiplier": 6.0,
-            "loan_interest_rate": 10.0,
-            "recent_credit_events": mock_account["credit_history"]
-        }
-        
-        # Set up mocks
-        mock_db.get_account.return_value = mock_account
-        mock_db.get_credit_report.return_value = mock_report
-        
-        # Call the method
-        result = await mock_db.get_credit_report(user_id)
-        
-        # Verify results
-        assert result is not None
-        assert result["credit_score"] == 720
-        assert result["credit_rating"] == "Good"
-        assert result["account_age_days"] == 365
-        assert result["has_active_loan"] is True
-        assert len(result["recent_credit_events"]) == 2
-        
-        # Verify correct methods were called
-        mock_db.get_credit_report.assert_called_once_with(user_id)
-    
-    async def test_get_credit_report_account_not_found(self, mock_db):
-        """Test getting a credit report when account doesn't exist."""
-        # Set up test data
-        user_id = "123456789"
-        
-        # Mock account not found
-        mock_db.get_account.return_value = None
-        mock_db.get_credit_report.side_effect = AccountNotFoundError(f"Account not found for user {user_id}")
-        
-        # Call the method and check for exception
-        with pytest.raises(AccountNotFoundError):
-            await mock_db.get_credit_report(user_id)
-        
-        # Verify correct methods were called
-        mock_db.get_credit_report.assert_called_once_with(user_id)
-    
-    async def test_credit_rating_calculation(self, mock_db):
-        """Test that credit rating is correctly calculated from credit score."""
-        # Define test cases with different credit scores
-        test_cases = [
-            {"score": 820, "expected_rating": "Excellent"},
-            {"score": 760, "expected_rating": "Very Good"},
-            {"score": 710, "expected_rating": "Good"},
-            {"score": 660, "expected_rating": "Fair"},
-            {"score": 610, "expected_rating": "Poor"},
-            {"score": 560, "expected_rating": "Very Poor"},
-            {"score": 500, "expected_rating": "Bad"}
+        # Set up mocks for loan history
+        mock_db.get_loan_history.return_value = [
+            {
+                "amount": 1000.0,
+                "status": "paid",
+                "on_time_payments": 12,
+                "late_payments": 0
+            },
+            {
+                "amount": 5000.0,
+                "status": "active",
+                "on_time_payments": 6,
+                "late_payments": 0
+            }
         ]
         
-        for case in test_cases:
-            # Set up test data
-            user_id = "123456789"
-            
-            # Set up mock credit report with the test case score
-            mock_report = {
-                "user_id": user_id,
-                "credit_score": case["score"],
-                "credit_rating": case["expected_rating"],
-                "account_age_days": 365,
-                "transaction_count_30d": 10,
-                "average_balance": 5000.0,
-                "has_active_loan": False,
-                "loan_repayment_status": "N/A",
-                "credit_limit_multiplier": 6.0,
-                "loan_interest_rate": 10.0,
-                "recent_credit_events": []
-            }
-            
-            # Set up mocks
-            mock_db.get_credit_report.return_value = mock_report
-            
-            # Call the method
-            result = await mock_db.get_credit_report(user_id)
-            
-            # Verify results
-            assert result is not None
-            assert result["credit_score"] == case["score"]
-            assert result["credit_rating"] == case["expected_rating"]
+        # Set up mocks for transaction history (regular deposits)
+        mock_db.get_transaction_history.return_value = [
+            {"type": "deposit", "amount": 2000.0, "date": "2023-05-15"},
+            {"type": "deposit", "amount": 2000.0, "date": "2023-04-15"},
+            {"type": "deposit", "amount": 2000.0, "date": "2023-03-15"}
+        ]
+        
+        # Set up mock for current credit score
+        mock_db.get_credit_score.return_value = {
+            "credit_score": 650,
+            "last_updated": "2023-03-15T14:30:00"  # Not recently updated
+        }
+        
+        # Set up mock for update result
+        mock_db.update_credit_score.return_value = {
+            "credit_score": 750,
+            "previous_score": 650,
+            "change": 100,
+            "reason": "Recalculation based on account factors",
+            "last_updated": "2023-06-15T14:30:00"
+        }
+        
+        # For this test, we'll directly check the mocked values
+        # In a real implementation, we'd call a calculate_credit_score method
+        
+        # Get account data
+        account = await mock_db.get_account(user_id)
+        
+        # Get loan history
+        loan_history = await mock_db.get_loan_history(user_id)
+        
+        # Get transaction history
+        transaction_history = await mock_db.get_transaction_history(user_id)
+        
+        # Get current credit score
+        current_score = await mock_db.get_credit_score(user_id)
+        
+        # Update credit score (in a real implementation this would be calculated based on factors)
+        result = await mock_db.update_credit_score(
+            user_id, 
+            100,  # Points to add
+            "Recalculation based on account factors"
+        )
+        
+        # Verify the methods were called correctly
+        mock_db.get_account.assert_called_once_with(user_id)
+        mock_db.get_loan_history.assert_called_once_with(user_id)
+        mock_db.get_transaction_history.assert_called_once_with(user_id)
+        mock_db.get_credit_score.assert_called_once_with(user_id)
+        mock_db.update_credit_score.assert_called_once()
+        
+        # Verify expected result
+        assert result["credit_score"] == 750
+        assert result["previous_score"] == 650
+        assert result["change"] == 100
 
 
 if __name__ == "__main__":

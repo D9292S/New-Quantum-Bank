@@ -1,10 +1,10 @@
-"""Unit tests for transaction operations."""
+"""Unit tests for the transaction functionality."""
 
 import asyncio
 import os
 import sys
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -12,293 +12,343 @@ import pytest
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
+from helpers.exceptions import AccountNotFoundError, InsufficientFundsError
+
 
 @pytest.mark.asyncio
 @pytest.mark.transactions
-class TestTransactionOperations:
-    """Tests for transaction creation, retrieval, and filtering."""
+class TestTransactions:
+    """Tests for transaction operations."""
     
     @pytest.fixture
     async def mock_db(self):
         """Set up a mock Database instance with transaction operations."""
-        db = AsyncMock()
+        db = MagicMock()
         
-        # Setup common mock methods
+        # Setup common mock methods as AsyncMocks
+        db.get_account = AsyncMock()
         db.log_transaction = AsyncMock()
-        db.get_transactions = AsyncMock()
-        db.get_recent_transactions = AsyncMock()
-        db.get_transactions_by_type_and_date = AsyncMock()
+        db.update_balance = AsyncMock()
+        db.get_transaction_history = AsyncMock()
         
         return db
     
-    async def test_log_transaction(self, mock_db):
-        """Test logging a transaction."""
+    async def test_deposit(self, mock_db):
+        """Test depositing money to an account."""
         # Set up test data
         user_id = "123456789"
-        transaction_type = "deposit"
         amount = 100.0
         description = "Test deposit"
         
-        # Set up mock transaction ID
-        transaction_id = "TXN-12345-abcdef"
-        
         # Set up mocks
-        mock_db.log_transaction.return_value = transaction_id
+        mock_db.get_account.return_value = {
+            "user_id": user_id,
+            "balance": 500.0
+        }
         
-        # Call the method
-        result = await mock_db.log_transaction(
+        mock_db.update_balance.return_value = {
+            "new_balance": 600.0,
+            "old_balance": 500.0,
+            "change": amount
+        }
+        
+        mock_db.log_transaction.return_value = {
+            "transaction_id": "TX123",
+            "user_id": user_id,
+            "transaction_type": "deposit",
+            "amount": amount,
+            "description": description,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        # Get the account
+        account = await mock_db.get_account(user_id)
+        
+        # Process deposit
+        balance_update = await mock_db.update_balance(user_id, amount)
+        transaction = await mock_db.log_transaction(
             user_id=user_id,
-            transaction_type=transaction_type,
+            transaction_type="deposit",
             amount=amount,
             description=description
         )
         
         # Verify results
-        assert result == transaction_id
+        assert balance_update["new_balance"] == 600.0
+        assert transaction["transaction_type"] == "deposit"
+        assert transaction["amount"] == amount
         
-        # Verify correct methods were called
+        # Verify methods were called correctly
+        mock_db.get_account.assert_called_once_with(user_id)
+        mock_db.update_balance.assert_called_once_with(user_id, amount)
         mock_db.log_transaction.assert_called_once_with(
             user_id=user_id,
-            transaction_type=transaction_type,
+            transaction_type="deposit",
             amount=amount,
-            description=description,
-            receiver_id=None
+            description=description
         )
     
-    async def test_log_transfer_transaction(self, mock_db):
-        """Test logging a transfer transaction."""
+    async def test_withdraw_success(self, mock_db):
+        """Test withdrawing money from an account."""
         # Set up test data
         user_id = "123456789"
-        receiver_id = "987654321"
-        transaction_type = "transfer_out"
-        amount = 50.0
-        description = "Transfer to friend"
-        
-        # Set up mock transaction ID
-        transaction_id = "TXN-12346-ghijkl"
+        amount = 100.0
+        description = "Test withdrawal"
         
         # Set up mocks
-        mock_db.log_transaction.return_value = transaction_id
+        mock_db.get_account.return_value = {
+            "user_id": user_id,
+            "balance": 500.0
+        }
         
-        # Call the method
-        result = await mock_db.log_transaction(
+        mock_db.update_balance.return_value = {
+            "new_balance": 400.0,
+            "old_balance": 500.0,
+            "change": -amount
+        }
+        
+        mock_db.log_transaction.return_value = {
+            "transaction_id": "TX124",
+            "user_id": user_id,
+            "transaction_type": "withdrawal",
+            "amount": amount,
+            "description": description,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        # Get the account
+        account = await mock_db.get_account(user_id)
+        
+        # Process withdrawal
+        balance_update = await mock_db.update_balance(user_id, -amount)
+        transaction = await mock_db.log_transaction(
             user_id=user_id,
-            transaction_type=transaction_type,
+            transaction_type="withdrawal",
             amount=amount,
-            description=description,
-            receiver_id=receiver_id
+            description=description
         )
         
         # Verify results
-        assert result == transaction_id
+        assert balance_update["new_balance"] == 400.0
+        assert transaction["transaction_type"] == "withdrawal"
+        assert transaction["amount"] == amount
         
-        # Verify correct methods were called
+        # Verify methods were called correctly
+        mock_db.get_account.assert_called_once_with(user_id)
+        mock_db.update_balance.assert_called_once_with(user_id, -amount)
         mock_db.log_transaction.assert_called_once_with(
             user_id=user_id,
-            transaction_type=transaction_type,
+            transaction_type="withdrawal",
+            amount=amount,
+            description=description
+        )
+    
+    async def test_withdraw_insufficient_funds(self, mock_db):
+        """Test withdrawing more money than available in the account."""
+        # Set up test data
+        user_id = "123456789"
+        amount = 700.0  # More than account balance
+        description = "Test withdrawal"
+        
+        # Set up mocks
+        mock_db.get_account.return_value = {
+            "user_id": user_id,
+            "balance": 500.0
+        }
+        
+        # Set up mock for insufficient funds error
+        mock_db.update_balance.side_effect = InsufficientFundsError("Insufficient funds for withdrawal")
+        
+        # Get the account
+        account = await mock_db.get_account(user_id)
+        
+        # Process withdrawal and check for exception
+        with pytest.raises(InsufficientFundsError):
+            await mock_db.update_balance(user_id, -amount)
+        
+        # Verify methods were called correctly
+        mock_db.get_account.assert_called_once_with(user_id)
+        mock_db.update_balance.assert_called_once_with(user_id, -amount)
+        mock_db.log_transaction.assert_not_called()
+    
+    async def test_transfer_success(self, mock_db):
+        """Test transferring money between accounts."""
+        # Set up test data
+        sender_id = "123456789"
+        receiver_id = "987654321"
+        amount = 100.0
+        description = "Test transfer"
+        
+        # Set up mocks
+        mock_db.get_account.side_effect = [
+            # First call - sender account
+            {
+                "user_id": sender_id,
+                "balance": 500.0
+            },
+            # Second call - receiver account
+            {
+                "user_id": receiver_id,
+                "balance": 300.0
+            }
+        ]
+        
+        # Mock balance updates
+        mock_db.update_balance.side_effect = [
+            # First call - sender balance decreased
+            {
+                "new_balance": 400.0,
+                "old_balance": 500.0,
+                "change": -amount
+            },
+            # Second call - receiver balance increased
+            {
+                "new_balance": 400.0,
+                "old_balance": 300.0,
+                "change": amount
+            }
+        ]
+        
+        # Mock transaction logs
+        mock_db.log_transaction.side_effect = [
+            # First call - sender transaction
+            {
+                "transaction_id": "TX125",
+                "user_id": sender_id,
+                "transaction_type": "transfer",
+                "amount": amount,
+                "description": description,
+                "receiver_id": receiver_id,
+                "timestamp": datetime.utcnow().isoformat()
+            },
+            # Second call - receiver transaction
+            {
+                "transaction_id": "TX126",
+                "user_id": receiver_id,
+                "transaction_type": "transfer_received",
+                "amount": amount,
+                "description": description,
+                "sender_id": sender_id,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        ]
+        
+        # Get sender and receiver accounts
+        sender_account = await mock_db.get_account(sender_id)
+        receiver_account = await mock_db.get_account(receiver_id)
+        
+        # Process transfer
+        sender_update = await mock_db.update_balance(sender_id, -amount)
+        receiver_update = await mock_db.update_balance(receiver_id, amount)
+        
+        # Log transactions
+        sender_transaction = await mock_db.log_transaction(
+            user_id=sender_id,
+            transaction_type="transfer",
             amount=amount,
             description=description,
             receiver_id=receiver_id
         )
+        
+        receiver_transaction = await mock_db.log_transaction(
+            user_id=receiver_id,
+            transaction_type="transfer_received",
+            amount=amount,
+            description=description,
+            sender_id=sender_id
+        )
+        
+        # Verify results
+        assert sender_update["new_balance"] == 400.0
+        assert receiver_update["new_balance"] == 400.0
+        assert sender_transaction["transaction_type"] == "transfer"
+        assert receiver_transaction["transaction_type"] == "transfer_received"
+        assert sender_transaction["receiver_id"] == receiver_id
+        assert receiver_transaction["sender_id"] == sender_id
+        
+        # Verify methods were called with correct parameters
+        assert mock_db.get_account.call_count == 2
+        assert mock_db.update_balance.call_count == 2
+        assert mock_db.log_transaction.call_count == 2
     
-    async def test_get_transactions(self, mock_db):
-        """Test retrieving a user's transaction history."""
+    async def test_transfer_sender_not_found(self, mock_db):
+        """Test transfer when sender account doesn't exist."""
+        # Set up test data
+        sender_id = "123456789"
+        receiver_id = "987654321"
+        amount = 100.0
+        description = "Test transfer"
+        
+        # Set up mock for AccountNotFoundError
+        mock_db.get_account.side_effect = AccountNotFoundError("Sender account not found")
+        
+        # Attempt to process transfer and check for exception
+        with pytest.raises(AccountNotFoundError):
+            await mock_db.get_account(sender_id)
+        
+        # Verify methods were called correctly
+        mock_db.get_account.assert_called_once_with(sender_id)
+        mock_db.update_balance.assert_not_called()
+        mock_db.log_transaction.assert_not_called()
+    
+    async def test_get_transaction_history(self, mock_db):
+        """Test retrieving transaction history for an account."""
         # Set up test data
         user_id = "123456789"
-        limit = 10
-        skip = 0
+        start_date = "2023-01-01"
+        end_date = "2023-06-30"
         
-        # Set up mock transactions
+        # Set up mock transaction history
         mock_transactions = [
             {
-                "transaction_id": "TXN-12345-abcdef",
+                "transaction_id": "TX001",
                 "user_id": user_id,
                 "transaction_type": "deposit",
-                "amount": 100.0,
-                "description": "Test deposit",
-                "timestamp": datetime.utcnow() - timedelta(days=1)
+                "amount": 500.0,
+                "description": "Initial deposit",
+                "timestamp": "2023-01-15T10:30:00"
             },
             {
-                "transaction_id": "TXN-12346-ghijkl",
+                "transaction_id": "TX002",
                 "user_id": user_id,
                 "transaction_type": "withdrawal",
-                "amount": 50.0,
-                "description": "Test withdrawal",
-                "timestamp": datetime.utcnow() - timedelta(days=2)
+                "amount": 100.0,
+                "description": "ATM withdrawal",
+                "timestamp": "2023-02-10T14:45:00"
+            },
+            {
+                "transaction_id": "TX003",
+                "user_id": user_id,
+                "transaction_type": "transfer",
+                "amount": 200.0,
+                "description": "Rent payment",
+                "receiver_id": "987654321",
+                "timestamp": "2023-03-01T09:15:00"
             }
         ]
         
         # Set up mocks
-        mock_db.get_transactions.return_value = mock_transactions
+        mock_db.get_transaction_history.return_value = mock_transactions
         
         # Call the method
-        result = await mock_db.get_transactions(user_id, limit, skip)
+        result = await mock_db.get_transaction_history(
+            user_id, 
+            start_date=start_date, 
+            end_date=end_date
+        )
         
         # Verify results
-        assert result is not None
-        assert len(result) == 2
+        assert len(result) == 3
         assert result[0]["transaction_type"] == "deposit"
         assert result[1]["transaction_type"] == "withdrawal"
+        assert result[2]["transaction_type"] == "transfer"
         
         # Verify correct methods were called
-        mock_db.get_transactions.assert_called_once_with(user_id, limit, skip)
-    
-    async def test_get_transactions_empty(self, mock_db):
-        """Test retrieving transactions when none exist."""
-        # Set up test data
-        user_id = "123456789"
-        
-        # Set up mocks
-        mock_db.get_transactions.return_value = []
-        
-        # Call the method
-        result = await mock_db.get_transactions(user_id)
-        
-        # Verify results
-        assert result == []
-        
-        # Verify correct methods were called
-        mock_db.get_transactions.assert_called_once_with(user_id)
-    
-    async def test_get_recent_transactions(self, mock_db):
-        """Test retrieving recent transactions within a time range."""
-        # Set up test data
-        user_id = "123456789"
-        days = 30
-        
-        # Set up mock transactions (all within 30 days)
-        mock_transactions = [
-            {
-                "transaction_id": "TXN-12345-abcdef",
-                "user_id": user_id,
-                "transaction_type": "deposit",
-                "amount": 100.0,
-                "description": "Test deposit",
-                "timestamp": datetime.utcnow() - timedelta(days=1)
-            },
-            {
-                "transaction_id": "TXN-12346-ghijkl",
-                "user_id": user_id,
-                "transaction_type": "withdrawal",
-                "amount": 50.0,
-                "description": "Test withdrawal",
-                "timestamp": datetime.utcnow() - timedelta(days=15)
-            },
-            {
-                "transaction_id": "TXN-12347-mnopqr",
-                "user_id": user_id,
-                "transaction_type": "transfer_out",
-                "amount": 25.0,
-                "description": "Test transfer",
-                "timestamp": datetime.utcnow() - timedelta(days=29)
-            }
-        ]
-        
-        # Set up mocks
-        mock_db.get_recent_transactions.return_value = mock_transactions
-        
-        # Call the method
-        result = await mock_db.get_recent_transactions(user_id, days)
-        
-        # Verify results
-        assert result is not None
-        assert len(result) == 3
-        
-        # Verify correct methods were called
-        mock_db.get_recent_transactions.assert_called_once_with(user_id, days)
-    
-    async def test_get_transactions_by_type_and_date(self, mock_db):
-        """Test retrieving transactions of a specific type on a specific date."""
-        # Set up test data
-        user_id = "123456789"
-        transaction_type = "deposit"
-        date = datetime.utcnow().date()  # Today
-        
-        # Set up mock transactions
-        mock_transactions = [
-            {
-                "transaction_id": "TXN-12345-abcdef",
-                "user_id": user_id,
-                "transaction_type": "deposit",
-                "amount": 100.0,
-                "description": "Morning deposit",
-                "timestamp": datetime.combine(date, datetime.min.time()) + timedelta(hours=9)  # 9 AM
-            },
-            {
-                "transaction_id": "TXN-12348-stuvwx",
-                "user_id": user_id,
-                "transaction_type": "deposit",
-                "amount": 200.0,
-                "description": "Afternoon deposit",
-                "timestamp": datetime.combine(date, datetime.min.time()) + timedelta(hours=15)  # 3 PM
-            }
-        ]
-        
-        # Set up mocks
-        mock_db.get_transactions_by_type_and_date.return_value = mock_transactions
-        
-        # Call the method
-        result = await mock_db.get_transactions_by_type_and_date(user_id, transaction_type, date)
-        
-        # Verify results
-        assert result is not None
-        assert len(result) == 2
-        assert all(tx["transaction_type"] == "deposit" for tx in result)
-        assert all(tx["timestamp"].date() == date for tx in result)
-        
-        # Verify correct methods were called
-        mock_db.get_transactions_by_type_and_date.assert_called_once_with(user_id, transaction_type, date)
-    
-    async def test_get_transactions_by_type_and_date_no_matches(self, mock_db):
-        """Test retrieving transactions of a specific type on a date with no matching transactions."""
-        # Set up test data
-        user_id = "123456789"
-        transaction_type = "loan_payment"
-        date = datetime.utcnow().date() - timedelta(days=5)  # 5 days ago
-        
-        # Set up mocks (no matching transactions)
-        mock_db.get_transactions_by_type_and_date.return_value = []
-        
-        # Call the method
-        result = await mock_db.get_transactions_by_type_and_date(user_id, transaction_type, date)
-        
-        # Verify results
-        assert result == []
-        
-        # Verify correct methods were called
-        mock_db.get_transactions_by_type_and_date.assert_called_once_with(user_id, transaction_type, date)
-    
-    async def test_transaction_amounts(self, mock_db):
-        """Test that transaction amounts are handled correctly."""
-        # Set up test data with various amounts
-        test_cases = [
-            {"amount": 100.0, "expected": 100.0},  # Regular float
-            {"amount": 99.99, "expected": 99.99},  # Two decimal places
-            {"amount": 1000, "expected": 1000.0},  # Integer should be converted to float
-            {"amount": 0.01, "expected": 0.01},    # Small amount
-            {"amount": 9999999.99, "expected": 9999999.99}  # Large amount
-        ]
-        
-        # Test each case
-        for case in test_cases:
-            # Set up mock transaction ID
-            transaction_id = f"TXN-{case['amount']}-test"
-            
-            # Set up mocks
-            mock_db.log_transaction.return_value = transaction_id
-            
-            # Call the method
-            result = await mock_db.log_transaction(
-                user_id="123456789",
-                transaction_type="test",
-                amount=case["amount"],
-                description=f"Test amount {case['amount']}"
-            )
-            
-            # Verify correct amount was passed
-            call_args = mock_db.log_transaction.call_args
-            assert call_args is not None
-            assert call_args[1]["amount"] == case["expected"]
+        mock_db.get_transaction_history.assert_called_once_with(
+            user_id, 
+            start_date=start_date, 
+            end_date=end_date
+        )
 
 
 if __name__ == "__main__":
