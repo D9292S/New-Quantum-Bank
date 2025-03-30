@@ -9,6 +9,7 @@ WORKDIR /app
 COPY pyproject.toml .
 COPY .uv.toml .
 COPY LICENSE .
+COPY README.md .
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
