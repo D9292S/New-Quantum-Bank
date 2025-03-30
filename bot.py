@@ -4,7 +4,7 @@ import logging
 import math
 import os
 import time
-from typing import Any, Dict
+from typing import Any
 
 import aiohttp
 import discord
@@ -302,7 +302,7 @@ class ClusterBot(discord.AutoShardedBot):
 
         # Load cogs concurrently
         results = await asyncio.gather(*cog_tasks, return_exceptions=True)
-        for cog_name, result in zip(enabled_cogs, results):
+        for cog_name, result in zip(enabled_cogs, results, strict=False):
             if isinstance(result, Exception):
                 self.log("error", "error", f"Cog {cog_name} failed to load", exc_info=result)
 
@@ -549,7 +549,7 @@ class ClusterBot(discord.AutoShardedBot):
         # Call parent close to handle Discord cleanup
         await super().close()
 
-    def get_system_metrics(self) -> Dict[str, Any]:
+    def get_system_metrics(self) -> dict[str, Any]:
         """Get detailed system metrics for monitoring"""
         metrics = {
             "uptime": time.time() - self.start_time,
@@ -567,8 +567,13 @@ class ClusterBot(discord.AutoShardedBot):
             metrics["memory_usage_mb"] = self._process.memory_info().rss / 1024 / 1024
             metrics["cpu_percent"] = self._process.cpu_percent(interval=0.1)
             metrics["thread_count"] = self._process.num_threads()
-        except Exception:
-            pass
+        except Exception as e:
+            # Log the error instead of silently ignoring it
+            self.log("bot", "warning", f"Could not collect process metrics: {str(e)}")
+            # Add placeholder values to indicate metrics are unavailable
+            metrics["memory_usage_mb"] = -1
+            metrics["cpu_percent"] = -1
+            metrics["thread_count"] = -1
 
         # Add cache metrics if available
         if hasattr(self, "cache_manager"):

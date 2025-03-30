@@ -8,7 +8,7 @@ import time
 import uuid
 from datetime import datetime, timedelta
 from functools import wraps
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import discord
 from discord.ext import commands
@@ -36,7 +36,7 @@ from helper.exceptions import (
 
 class PerformanceMonitor:
     def __init__(self):
-        self.operation_times: Dict[str, List[float]] = {}
+        self.operation_times: dict[str, list[float]] = {}
         self.logger = logging.getLogger("bot")
 
     def record_operation(self, operation_name: str, duration: float):
@@ -331,8 +331,10 @@ class Database(commands.Cog):
             if self.client:
                 try:
                     self.client.close()
-                except:
-                    pass
+                except Exception as e:
+                    # Log the error instead of silently ignoring it
+                    self.logger.debug(f"Non-critical error closing MongoDB client: {str(e)}")
+                    # We still want to continue with creating a new client
 
             # Create a fresh client with simplified settings - minimal parameters for reliability
             self.logger.info("Creating fresh MongoDB client...")
@@ -412,7 +414,7 @@ class Database(commands.Cog):
                 self.logger.info("Successfully connected to MongoDB")
                 return True
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 retry_count += 1
                 self.connection_retries += 1
 
@@ -783,8 +785,12 @@ class Database(commands.Cog):
         try:
             await self.client.close()
             self.logger.info({"event": "Database connection closed", "level": "info"})
-        except Exception:
-            pass
+        except Exception as e:
+            # Log the error instead of silently ignoring it
+            self.logger.warning({"event": "Failed to cleanly close database connection", 
+                                "error": str(e), 
+                                "level": "warning"})
+            # Still proceed with unloading
 
     def _validate_id(self, id_str: str) -> bool:
         """Validate Discord ID format with improved security checks"""
@@ -1004,12 +1010,12 @@ class Database(commands.Cog):
         self,
         user_id: str,
         transaction_type: str,
-        amount: Union[int, float],
+        amount: int | float,
         description: str = None,
         receiver_id: str = None,
         balance_before: float = None,
         balance_after: float = None,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Log a transaction with detailed information
 
@@ -1147,7 +1153,7 @@ class Database(commands.Cog):
         return f"{user_id}@{bank_name}.{random_suffix}"
 
     @measure_performance("set_upi_id")
-    async def set_upi_id(self, user_id: str) -> Optional[str]:
+    async def set_upi_id(self, user_id: str) -> str | None:
         """Set UPI ID with validation"""
         try:
             if not self._validate_id(user_id):
@@ -1169,7 +1175,7 @@ class Database(commands.Cog):
         except Exception as e:
             raise DatabaseError(f"Unexpected error in set_upi_id: {str(e)}")
 
-    async def get_leaderboard(self, branch_name: str, limit: int = 10) -> List[Dict[str, Any]]:
+    async def get_leaderboard(self, branch_name: str, limit: int = 10) -> list[dict[str, Any]]:
         """Get branch leaderboard with pagination"""
         try:
             branch_name = self._sanitize_input(branch_name)
@@ -1619,7 +1625,7 @@ class Database(commands.Cog):
             raise DatabaseError(f"Failed to create loan: {str(e)}")
 
     @measure_performance("repay_loan")
-    async def repay_loan(self, user_id: str, amount: float = None) -> Dict[str, Any]:
+    async def repay_loan(self, user_id: str, amount: float = None) -> dict[str, Any]:
         """Repay a loan (either specific amount or monthly payment)"""
         try:
             account = await self.get_account(user_id)
@@ -1740,7 +1746,7 @@ class Database(commands.Cog):
             raise DatabaseError(f"Failed to process loan payment: {str(e)}")
 
     @measure_performance("check_loan_status")
-    async def check_loan_status(self, user_id: str) -> Optional[Dict[str, Any]]:
+    async def check_loan_status(self, user_id: str) -> dict[str, Any] | None:
         """Check status of a user's loan"""
         try:
             account = await self.get_account(user_id)
@@ -2009,7 +2015,7 @@ class Database(commands.Cog):
             raise CreditScoreError(f"Error generating credit report: {str(e)}")
 
     @measure_performance("get_all_accounts")
-    async def get_all_accounts(self) -> List[Dict[str, Any]]:
+    async def get_all_accounts(self) -> list[dict[str, Any]]:
         """Get all accounts in the system"""
         try:
             # Check if db is available
@@ -2026,7 +2032,7 @@ class Database(commands.Cog):
             return []
 
     @measure_performance("get_accounts_with_active_loans")
-    async def get_accounts_with_active_loans(self) -> List[Dict[str, Any]]:
+    async def get_accounts_with_active_loans(self) -> list[dict[str, Any]]:
         """Get all accounts with active loans"""
         try:
             # Check if db is available
@@ -2050,7 +2056,7 @@ class Database(commands.Cog):
             return []
 
     @measure_performance("get_recent_transactions")
-    async def get_recent_transactions(self, user_id: str, days: int = 30) -> List[Dict[str, Any]]:
+    async def get_recent_transactions(self, user_id: str, days: int = 30) -> list[dict[str, Any]]:
         """Get recent transactions for a user within specified number of days"""
         try:
             if not self._validate_id(user_id):
@@ -2080,7 +2086,7 @@ class Database(commands.Cog):
             raise DatabaseError(f"Failed to get recent transactions: {str(e)}")
 
     @measure_performance("get_active_loan")
-    async def get_active_loan(self, user_id: str) -> Optional[Dict[str, Any]]:
+    async def get_active_loan(self, user_id: str) -> dict[str, Any] | None:
         """Get active loan for a user"""
         try:
             account = await self.get_account(user_id)

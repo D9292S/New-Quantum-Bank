@@ -74,4 +74,4 @@ networks:
 # Example: docker-compose --profile prod up
 profiles:
   - dev   # MongoDB, Redis, single bot instance
-  - prod  # MongoDB, Redis, clustered bot instances 
+  - prod  # MongoDB, Redis, clustered bot instances

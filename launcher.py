@@ -6,7 +6,7 @@ import os
 import platform
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import quote_plus
 
 import discord
@@ -37,7 +37,7 @@ class ColoredFormatter(logging.Formatter):
         "LIGHT_BLUE": "\033[94m",  # JSON punctuation
     }
 
-    def __init__(self, fmt: Optional[str] = None, datefmt: Optional[str] = None, style: str = "%") -> None:
+    def __init__(self, fmt: str | None = None, datefmt: str | None = None, style: str = "%") -> None:
         super().__init__(fmt, datefmt, style)
 
         # Define compact pattern transformations
@@ -584,7 +584,7 @@ def calculate_shards_for_cluster(cluster_id: int, total_clusters: int, total_sha
     return list(range(start_shard, end_shard + 1))
 
 
-def display_error(message: str, exit_code: Optional[int] = None) -> None:
+def display_error(message: str, exit_code: int | None = None) -> None:
     """Display an error message in a highly visible format"""
     colors = ColoredFormatter.COLORS
     border = f"{colors['RED']}{'═' * 80}{colors['RESET']}"

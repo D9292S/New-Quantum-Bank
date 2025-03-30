@@ -83,7 +83,7 @@ jobs:
           path: dist/
 
       - name: Deploy to staging
-        if: ${{ github.event.inputs.environment == 'staging' || github.event_name == 'release' }}        
+        if: ${{ github.event.inputs.environment == 'staging' || github.event_name == 'release' }}
         run: |
           echo "Deploying to staging environment"
           # Example deployment commands:
@@ -103,4 +103,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           environment: ${{ github.event.inputs.environment || 'staging' }}
-          initial-status: success 
+          initial-status: success

@@ -13,7 +13,7 @@ const appUsers = existingUsers.users.filter(user => user.user === process.env.AP
 
 if (appUsers.length === 0) {
     print('Creating application database user...');
-    
+
     db.createUser({
         user: process.env.APP_USER || 'quantum_app',
         pwd: process.env.APP_PASSWORD || 'quantum_password',
@@ -21,7 +21,7 @@ if (appUsers.length === 0) {
             { role: 'readWrite', db: 'quantum_bank' }
         ]
     });
-    
+
     print('Application user created successfully.');
 } else {
     print('Application user already exists, skipping creation.');
@@ -43,10 +43,10 @@ db.createCollection('accounts', {
                 user_id: { bsonType: 'string' },
                 guild_id: { bsonType: 'string' },
                 balance: { bsonType: 'double' },
-                account_type: { 
-                    enum: ['checking', 'savings', 'premium'] 
+                account_type: {
+                    enum: ['checking', 'savings', 'premium']
                 },
-                credit_score: { 
+                credit_score: {
                     bsonType: 'int',
                     minimum: 300,
                     maximum: 850
@@ -120,4 +120,4 @@ db.transactions.createIndex({ 'account_id': 1, 'timestamp': -1 });
 db.transactions.createIndex({ 'timestamp': 1 }); // For cleanup of old data
 db.loans.createIndex({ 'account_id': 1, 'status': 1 });
 
-print('Database setup completed successfully.'); 
+print('Database setup completed successfully.');

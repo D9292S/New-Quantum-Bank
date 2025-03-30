@@ -3,7 +3,7 @@ import io
 import logging
 import random
 from datetime import datetime, timedelta
-from typing import Any, Optional
+from typing import Any
 
 import discord
 import requests
@@ -40,7 +40,7 @@ class Cache:
         self.max_size = max_size
         self.logger = logging.getLogger("bot")
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """Get value from cache with TTL check"""
         try:
             cache_data = await self.db.cache.find_one({"key": key, "expires_at": {"$gt": datetime.utcnow()}})
@@ -833,7 +833,7 @@ class Account(commands.Cog):
 
                 raise AccountError("Failed to create account")
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 raise KYCError("You took too long to provide your KYC details. Please try again.")
 
     @discord.slash_command(description="Generate a UPI ID for your account.")
@@ -1299,7 +1299,7 @@ class Account(commands.Cog):
                 )
                 await interaction.followup.send(embed=fail_embed)
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             timeout_embed = discord.Embed(
                 title="Loan Application Cancelled",
                 description="Confirmation timed out. Your loan application has been cancelled.",

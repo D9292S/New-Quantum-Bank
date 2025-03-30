@@ -14,7 +14,6 @@ import sys
 import time
 from datetime import datetime, timedelta
 from threading import Thread
-from typing import Dict
 
 import psutil
 
@@ -29,8 +28,8 @@ class BotCluster:
         self.shard_count = shard_count
         self.launcher_path = launcher_path
         self.restart_delay = restart_delay
-        self.processes: Dict[int, subprocess.Popen] = {}
-        self.start_times: Dict[int, float] = {}
+        self.processes: dict[int, subprocess.Popen] = {}
+        self.start_times: dict[int, float] = {}
         self.running = True
 
         # Register signal handlers

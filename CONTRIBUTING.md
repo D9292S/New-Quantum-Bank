@@ -85,10 +85,10 @@ We follow a simplified version of GitFlow for this project:
    ```bash
    # Debug mode
    python -m launcher --debug
-   
+
    # Performance mode
    python -m launcher --performance high
-   
+
    # Verbose logging
    python -m launcher --log-level verbose
    ```

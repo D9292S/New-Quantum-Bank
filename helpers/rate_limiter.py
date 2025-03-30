@@ -1,8 +1,9 @@
 import asyncio
 import logging
 import time
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger("bot")
 
@@ -12,7 +13,7 @@ class RateLimiter:
 
     def __init__(self):
         # Store rate limits by key (user_id, guild_id, etc.)
-        self._rate_limits: Dict[str, Dict[str, Any]] = {}
+        self._rate_limits: dict[str, dict[str, Any]] = {}
 
         # Different buckets for different types of rate limits
         self._buckets = {
@@ -54,7 +55,7 @@ class RateLimiter:
         except Exception as e:
             logger.error(f"Error in rate limiter cleanup: {e}")
 
-    def is_rate_limited(self, bucket: str, key: str, limit: int, window: int) -> Tuple[bool, float]:
+    def is_rate_limited(self, bucket: str, key: str, limit: int, window: int) -> tuple[bool, float]:
         """
         Check if a key is rate limited
 
@@ -99,7 +100,7 @@ class RateLimiter:
         data["count"] += 1
         return False, 0
 
-    def increment(self, bucket: str, key: str, limit: int, window: int) -> Tuple[bool, float]:
+    def increment(self, bucket: str, key: str, limit: int, window: int) -> tuple[bool, float]:
         """
         Increment usage counter and check if rate limited
 
@@ -151,7 +152,7 @@ class RateLimiter:
 
 
 # Decorator for rate limiting commands
-def rate_limit(limit: int, window: int, *, key_func: Optional[Callable] = None, bucket: str = "user"):
+def rate_limit(limit: int, window: int, *, key_func: Callable | None = None, bucket: str = "user"):
     """
     Decorator to apply rate limiting to commands
 

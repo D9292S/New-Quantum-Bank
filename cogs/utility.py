@@ -3,7 +3,6 @@ import logging
 import os
 import platform
 import time
-from typing import Optional
 
 import discord
 import psutil
@@ -51,7 +50,7 @@ class Utility(commands.Cog):
         await message.edit_original_response(content=None, embed=embed)
 
     @discord.slash_command(description="Get help with bot commands")
-    async def help(self, ctx, command: Optional[str] = None):
+    async def help(self, ctx, command: str | None = None):
         """Show help for all commands or a specific command"""
         if command:
             await self._show_command_help(ctx, command)

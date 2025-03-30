@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 from urllib.parse import quote_plus
 
 import aiohttp
@@ -18,7 +18,7 @@ class ConnectionPoolManager:
 
     def __init__(
         self,
-        mongo_uri: Optional[str] = None,
+        mongo_uri: str | None = None,
         max_mongo_pool_size: int = 100,
         max_http_connections: int = 100,
         circuit_breaker_threshold: int = 5,
@@ -51,7 +51,7 @@ class ConnectionPoolManager:
         self._mongo_lock = asyncio.Lock()
         self._http_lock = asyncio.Lock()
 
-    async def get_mongo_client(self) -> Optional[motor.motor_asyncio.AsyncIOMotorClient]:
+    async def get_mongo_client(self) -> motor.motor_asyncio.AsyncIOMotorClient | None:
         """Get or create MongoDB client with connection pooling"""
         if not self._mongo_uri:
             return None
@@ -120,14 +120,14 @@ class ConnectionPoolManager:
 
         return self._mongo_client
 
-    async def get_database(self, db_name: str) -> Optional[motor.motor_asyncio.AsyncIOMotorDatabase]:
+    async def get_database(self, db_name: str) -> motor.motor_asyncio.AsyncIOMotorDatabase | None:
         """Get MongoDB database from the connection pool"""
         client = await self.get_mongo_client()
         if client:
             return client[db_name]
         return None
 
-    async def get_http_session(self) -> Optional[aiohttp.ClientSession]:
+    async def get_http_session(self) -> aiohttp.ClientSession | None:
         """Get or create HTTP session with connection pooling"""
         if self._http_session is None or self._http_session.closed:
             async with self._http_lock:
@@ -181,7 +181,7 @@ class ConnectionPoolManager:
             except Exception as e:
                 logger.error(f"Error closing HTTP session: {str(e)}")
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get connection pool statistics"""
         return {
             "mongo": {
@@ -200,8 +200,8 @@ class ConnectionPoolManager:
     def build_mongo_uri(
         host: str,
         port: int,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: str | None = None,
+        password: str | None = None,
         auth_db: str = "admin",
         ssl: bool = False,
     ) -> str:

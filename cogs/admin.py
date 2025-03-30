@@ -516,7 +516,7 @@ class Admin(commands.Cog):
                 embed.set_footer(text="Admin Operation")
 
                 await ctx.followup.send(embed=embed)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self.logger.error({"event": "Interest calculation timeout", "level": "error", "timeout": "60 seconds"})
             await ctx.followup.send(
                 "⚠️ The interest calculation operation timed out after 60 seconds. "

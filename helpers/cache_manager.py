@@ -2,11 +2,12 @@ import asyncio
 import hashlib
 import json
 import logging
-import pickle
+import base64
 import time
 import zlib
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Set, TypeVar
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 logger = logging.getLogger("bot")
@@ -20,7 +21,7 @@ class CacheManager:
     """
 
     def __init__(self, ttl_seconds: int = 300, max_size: int = 1000, enable_stats: bool = True, mongodb=None):
-        self._memory_cache: Dict[str, Dict[str, Any]] = {}
+        self._memory_cache: dict[str, dict[str, Any]] = {}
         self._default_ttl = ttl_seconds
         self._max_size = max_size
         self._enable_stats = enable_stats
@@ -34,10 +35,10 @@ class CacheManager:
         self._evictions = 0
 
         # Namespace support for organization
-        self._namespaces: Set[str] = set()
+        self._namespaces: set[str] = set()
 
         # Cache hierarchies
-        self._hierarchy: Dict[str, List[str]] = {}
+        self._hierarchy: dict[str, list[str]] = {}
 
         # Lock for thread safety
         self._lock = asyncio.Lock()
@@ -112,7 +113,7 @@ class CacheManager:
                     self._memory_cache.pop(namespace, None)
                     self._namespaces.discard(namespace)
 
-    async def get(self, key: str, namespace: str = "default") -> Optional[Any]:
+    async def get(self, key: str, namespace: str = "default") -> Any | None:
         """Get a value from the cache"""
         now = time.time()
 
@@ -149,7 +150,9 @@ class CacheManager:
                     # If compressed, decompress
                     if isinstance(value, bytes):
                         try:
-                            value = pickle.loads(zlib.decompress(value))
+                            # Use JSON instead of pickle for security
+                            decompressed = zlib.decompress(value)
+                            value = json.loads(decompressed.decode('utf-8'))
                         except Exception as e:
                             logger.error(f"Error decompressing cache data: {e}")
                             value = None
@@ -173,7 +176,7 @@ class CacheManager:
         self,
         key: str,
         value: Any,
-        ttl: Optional[int] = None,
+        ttl: int | None = None,
         namespace: str = "default",
         store_distributed: bool = False,
         compress: bool = False,
@@ -211,7 +214,20 @@ class CacheManager:
                 # Compress larger values
                 if compress:
                     try:
-                        mongo_value = zlib.compress(pickle.dumps(value))
+                        # Use JSON instead of pickle for security
+                        # Handle non-serializable objects by converting to string
+                        def serialize_fallback(obj):
+                            try:
+                                # Try adding a __json__ method to classes that need custom serialization
+                                if hasattr(obj, "__json__"):
+                                    return obj.__json__()
+                                # Default to string representation
+                                return str(obj)
+                            except:
+                                return str(obj)
+                        
+                        json_data = json.dumps(mongo_value, default=serialize_fallback)
+                        mongo_value = zlib.compress(json_data.encode('utf-8'))
                     except Exception as e:
                         logger.error(f"Error compressing cache data: {e}")
 
@@ -279,11 +295,14 @@ class CacheManager:
             except Exception as e:
                 logger.error(f"Error clearing MongoDB cache: {e}")
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics"""
         total_items = sum(len(items) for items in self._memory_cache.values())
+        # Calculate memory usage without pickle
         memory_usage = sum(
-            len(pickle.dumps(item)) for namespace in self._memory_cache.values() for item in namespace.values()
+            len(json.dumps(item, default=lambda o: str(o)).encode())
+            for namespace in self._memory_cache.values() 
+            for item in namespace.values()
         )
 
         return {
@@ -298,11 +317,11 @@ class CacheManager:
         }
 
     # Helper methods for more advanced usage
-    def register_namespace_hierarchy(self, parent: str, children: List[str]) -> None:
+    def register_namespace_hierarchy(self, parent: str, children: list[str]) -> None:
         """Register parent-child relationships between namespaces"""
         self._hierarchy[parent] = children
 
-    async def get_keys(self, namespace: str = "default") -> List[str]:
+    async def get_keys(self, namespace: str = "default") -> list[str]:
         """Get all keys in a namespace"""
         if namespace in self._memory_cache:
             return list(self._memory_cache[namespace].keys())
@@ -312,8 +331,8 @@ class CacheManager:
 # Decorator for caching function results
 def cached(
     ttl: int = 300,
-    namespace: Optional[str] = None,
-    key_builder: Optional[Callable] = None,
+    namespace: str | None = None,
+    key_builder: Callable | None = None,
     store_distributed: bool = False,
 ):
     """
@@ -362,7 +381,7 @@ def cached(
 
                 # Create a unique key
                 key_parts = arg_items + kwarg_items
-                cache_key = hashlib.md5(json.dumps(key_parts).encode()).hexdigest()
+                cache_key = hashlib.sha256(json.dumps(key_parts).encode()).hexdigest()
 
             # Try to get from cache
             cached_result = await cache_manager.get(cache_key, namespace=_namespace)

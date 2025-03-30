@@ -4,4 +4,4 @@ resolution = "highest"
 
 [tool.uv.virtualenv]
 path = ".venv"
-prompt = "quantum-bank" 
+prompt = "quantum-bank"

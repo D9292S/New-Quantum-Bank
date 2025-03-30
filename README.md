@@ -90,7 +90,7 @@ Quantum Bank is a feature-rich Discord economy bot with advanced banking feature
    ```bash
    uv run run
    ```
-   
+
    Or with debug mode:
    ```bash
    uv run run-debug
@@ -122,7 +122,7 @@ pytest
 # Run only unit tests
 pytest tests/unit
 
-# Run only integration tests 
+# Run only integration tests
 pytest tests/integration
 
 # Run tests with coverage report

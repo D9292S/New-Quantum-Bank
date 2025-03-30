@@ -3,7 +3,7 @@ import logging
 import os
 import platform
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import psutil
 
@@ -122,7 +122,7 @@ class ShardManager:
         except Exception as e:
             logger.error(f"Error updating shard status: {e}")
 
-    async def get_all_shard_statuses(self) -> List[Dict[str, Any]]:
+    async def get_all_shard_statuses(self) -> list[dict[str, Any]]:
         """Get status of all shards across all clusters"""
         if not self.mongodb:
             return []
@@ -139,7 +139,7 @@ class ShardManager:
             logger.error(f"Error getting all shard statuses: {e}")
             return []
 
-    async def get_guild_shard(self, guild_id: int) -> Optional[int]:
+    async def get_guild_shard(self, guild_id: int) -> int | None:
         """Calculate which shard a guild belongs to"""
         try:
             if hasattr(self.bot, "get_shard_id"):
@@ -156,8 +156,8 @@ class ShardManager:
     async def send_cross_shard_event(
         self,
         event_type: str,
-        data: Dict[str, Any],
-        target_shards: Optional[List[int]] = None,
+        data: dict[str, Any],
+        target_shards: list[int] | None = None,
         include_self: bool = False,
     ) -> bool:
         """
@@ -246,7 +246,7 @@ class ShardManager:
             logger.error(f"Error processing pending events: {e}")
             return 0
 
-    async def _process_event(self, event_type: str, data: Dict[str, Any]) -> None:
+    async def _process_event(self, event_type: str, data: dict[str, Any]) -> None:
         """Process a received event based on type"""
         try:
             if event_type == "cache_invalidate":
@@ -302,7 +302,7 @@ class ShardManager:
         except Exception as e:
             logger.error(f"Error processing event {event_type}: {e}")
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get shard manager metrics"""
         return {
             "events_sent": self._metrics["events_sent"],

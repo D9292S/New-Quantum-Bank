@@ -47,4 +47,4 @@ jobs:
           exit 0  # Don't fail the build yet, just report
         else
           echo "No security issues found."
-        fi 
+        fi
