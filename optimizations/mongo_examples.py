@@ -8,7 +8,11 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from optimizations.mongodb_improvements import BulkOperations, optimize_query, smart_cache
+from optimizations.mongodb_improvements import (
+    BulkOperations,
+    optimize_query,
+    smart_cache,
+)
 
 logger = logging.getLogger("database")
 
