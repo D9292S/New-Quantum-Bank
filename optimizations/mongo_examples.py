@@ -5,9 +5,8 @@ This module demonstrates how to apply the optimizations to existing methods.
 """
 
 import logging
-from collections.abc import Sequence
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from optimizations.mongodb_improvements import BulkOperations, optimize_query, smart_cache
 

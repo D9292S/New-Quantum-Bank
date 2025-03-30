@@ -32,7 +32,7 @@ from helpers.exceptions import (
     LoanLimitError,
     ValidationError,
 )
-from optimizations.mongodb_improvements import smart_cache, optimize_query
+from optimizations.mongodb_improvements import optimize_query, smart_cache
 
 
 class PerformanceMonitor:
@@ -1179,30 +1179,21 @@ class Database(commands.Cog):
         """Get a leaderboard of users in a specific branch, sorted by balance"""
         try:
             branch_name = self._sanitize_input(branch_name)
-            
+
             # Add projection to limit returned fields
-            projection = {
-                "user_id": 1,
-                "username": 1,
-                "balance": 1,
-                "branch_name": 1,
-                "_id": 1
-            }
-            
-            cursor = self.db.accounts.find(
-                {"branch_name": branch_name, "balance": {"$gt": 0}},
-                projection
-            )
-            
+            projection = {"user_id": 1, "username": 1, "balance": 1, "branch_name": 1, "_id": 1}
+
+            cursor = self.db.accounts.find({"branch_name": branch_name, "balance": {"$gt": 0}}, projection)
+
             cursor.sort("balance", -1).limit(limit)
-            
+
             # Try to use index hint if available
             try:
                 cursor.hint("balance_-1")
             except Exception as e:
                 # If index doesn't exist, don't fail the query
                 self.logger.debug(f"Cannot use balance_-1 index for leaderboard: {str(e)}")
-                
+
             return await cursor.to_list(length=limit)
         except Exception as e:
             self.logger.error(f"Error getting leaderboard: {str(e)}")
@@ -2082,30 +2073,20 @@ class Database(commands.Cog):
         try:
             if not self._validate_id(user_id):
                 raise ValidationError("Invalid user ID format")
-            
+
             # Calculate date range
             end_date = datetime.utcnow()
             start_date = end_date - timedelta(days=days)
-            
+
             # Add projection to limit returned fields
-            projection = {
-                "user_id": 1,
-                "transaction_type": 1,
-                "amount": 1,
-                "timestamp": 1,
-                "description": 1,
-                "_id": 1
-            }
-            
+            projection = {"user_id": 1, "transaction_type": 1, "amount": 1, "timestamp": 1, "description": 1, "_id": 1}
+
             # Optimize query with date range filter
-            query = optimize_query({
-                "user_id": user_id,
-                "timestamp": {"$gte": start_date, "$lte": end_date}
-            })
-            
+            query = optimize_query({"user_id": user_id, "timestamp": {"$gte": start_date, "$lte": end_date}})
+
             cursor = self.db.transactions.find(query, projection)
             cursor.sort("timestamp", -1)
-            
+
             return await cursor.to_list(length=None)
         except Exception as e:
             self.logger.error(f"Error getting recent transactions: {str(e)}")
