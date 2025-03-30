@@ -1,1 +1,1 @@
-"""Integration tests for Quantum Bank Discord bot.""" 
+"""Integration tests for Quantum Bank Discord bot."""

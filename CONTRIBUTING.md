@@ -34,6 +34,30 @@ By participating in this project, you agree to uphold our Code of Conduct, which
 5. Update documentation as necessary
 6. Submit a pull request to the `main` branch
 
+## Branching Strategy
+
+We follow a simplified version of GitFlow for this project:
+
+- `main` - The production branch. All releases are tagged from this branch.
+- `develop` - The main development branch. Features and fixes are merged here first.
+- `feature/*` - Feature branches created from `develop`.
+- `fix/*` - Bugfix branches created from `develop` or `main` (for hotfixes).
+- `release/*` - Release preparation branches.
+
+### Branch Naming Convention
+
+- Feature branches: `feature/short-description` or `feature/issue-number-description`
+- Bug fix branches: `fix/short-description` or `fix/issue-number-description`
+- Release branches: `release/vX.Y.Z`
+- Hotfix branches: `hotfix/vX.Y.Z` or `hotfix/critical-issue-description`
+
+### Workflow
+
+1. Create your branch from `develop` (or `main` for hotfixes).
+2. Develop your feature or fix.
+3. Create a PR to merge back into the appropriate branch.
+4. After review and approval, your PR will be merged.
+
 ## Development Setup
 
 1. Fork and clone the repository
@@ -46,16 +70,27 @@ By participating in this project, you agree to uphold our Code of Conduct, which
    powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
    ```
 
-3. Create a virtual environment and install dependencies:
+3. Install the package with development dependencies (uv will automatically create a virtual environment):
    ```bash
-   uv venv
    uv pip install -e ".[development]"
    ```
 
 4. Copy `.env.example` to `.env` and fill in the required values
 5. Run the bot:
    ```bash
-   python launcher.py
+   python -m launcher
+   ```
+
+   Or with additional options:
+   ```bash
+   # Debug mode
+   python -m launcher --debug
+
+   # Performance mode
+   python -m launcher --performance high
+
+   # Verbose logging
+   python -m launcher --log-level verbose
    ```
 
 ## Style Guidelines
@@ -105,4 +140,4 @@ By participating in this project, you agree to uphold our Code of Conduct, which
 
 If you have any questions about contributing, feel free to open an issue with your question.
 
-Thank you for contributing to Quantum Bank Discord Bot! 
+Thank you for contributing to Quantum Bank Discord Bot!
