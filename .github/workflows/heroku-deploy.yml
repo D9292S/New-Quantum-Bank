@@ -28,9 +28,17 @@ jobs:
           heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
           heroku_email: ${{ secrets.HEROKU_EMAIL }}
           usedocker: true
+          justlogin: true
+          
+      - name: Push to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          heroku container:push worker --app ${{ secrets.HEROKU_APP_NAME }}
+          heroku container:release worker --app ${{ secrets.HEROKU_APP_NAME }}
           
       - name: Health check
         run: |
           echo "Waiting for deployment to complete..."
           sleep 30
-          curl -f https://${{ secrets.HEROKU_APP_NAME }}.herokuapp.com/health || exit 1 
+          curl -f https://${{ secrets.HEROKU_APP_NAME }}.herokuapp.com/health || echo "Health check endpoint not available for worker dyno" 
