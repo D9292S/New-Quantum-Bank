@@ -32,6 +32,7 @@ from helpers.exceptions import (
     LoanLimitError,
     ValidationError,
 )
+from optimizations.mongodb_improvements import smart_cache, optimize_query
 
 
 class PerformanceMonitor:
@@ -880,12 +881,9 @@ class Database(commands.Cog):
             return None
 
     @measure_performance
+    @smart_cache(ttl=300)  # Cache for 5 minutes
     async def get_account(self, user_id, guild_id):
-        """Get a user's account by user_id and guild_id"""
-        if self.db is None:
-            self.logger.error(f"Cannot get account for user {user_id}: database not initialized")
-            return None
-
+        """Get an account by user ID and guild ID"""
         try:
             account = await self._execute_with_retry(
                 f"Get account for user {user_id}",
@@ -1175,20 +1173,40 @@ class Database(commands.Cog):
         except Exception as e:
             raise DatabaseError(f"Unexpected error in set_upi_id: {str(e)}")
 
+    @measure_performance
+    @smart_cache(ttl=600)  # Cache for 10 minutes
     async def get_leaderboard(self, branch_name: str, limit: int = 10) -> list[dict[str, Any]]:
-        """Get branch leaderboard with pagination"""
+        """Get a leaderboard of users in a specific branch, sorted by balance"""
         try:
             branch_name = self._sanitize_input(branch_name)
-
-            if not isinstance(limit, int) or limit <= 0 or limit > 100:
-                raise ValidationError("Invalid limit value")
-
-            cursor = self.db.accounts.find({"branch_name": branch_name}).sort("balance", DESCENDING).limit(limit)
-            return [doc async for doc in cursor]
-        except OperationFailure as e:
-            raise DatabaseError(f"Failed to get leaderboard: {str(e)}")
+            
+            # Add projection to limit returned fields
+            projection = {
+                "user_id": 1,
+                "username": 1,
+                "balance": 1,
+                "branch_name": 1,
+                "_id": 1
+            }
+            
+            cursor = self.db.accounts.find(
+                {"branch_name": branch_name, "balance": {"$gt": 0}},
+                projection
+            )
+            
+            cursor.sort("balance", -1).limit(limit)
+            
+            # Try to use index hint if available
+            try:
+                cursor.hint("balance_-1")
+            except Exception as e:
+                # If index doesn't exist, don't fail the query
+                self.logger.debug(f"Cannot use balance_-1 index for leaderboard: {str(e)}")
+                
+            return await cursor.to_list(length=limit)
         except Exception as e:
-            raise DatabaseError(f"Unexpected error in get_leaderboard: {str(e)}")
+            self.logger.error(f"Error getting leaderboard: {str(e)}")
+            return []
 
     @measure_performance("update_user_branch")
     async def update_user_branch(self, user_id: str, branch_id: str, branch_name: str) -> bool:
@@ -1238,6 +1256,8 @@ class Database(commands.Cog):
         except Exception as e:
             raise DatabaseError(f"Unexpected error in toggle_command: {str(e)}")
 
+    @measure_performance
+    @smart_cache(ttl=1800)  # Cache for 30 minutes
     async def get_command_status(self, guild_id: str, command_name: str) -> bool:
         """Get command status with error handling"""
         try:
@@ -2056,39 +2076,49 @@ class Database(commands.Cog):
             return []
 
     @measure_performance("get_recent_transactions")
+    @smart_cache(ttl=300)  # 5 minutes cache
     async def get_recent_transactions(self, user_id: str, days: int = 30) -> list[dict[str, Any]]:
-        """Get recent transactions for a user within specified number of days"""
+        """Get recent transactions for a user within the specified number of days"""
         try:
             if not self._validate_id(user_id):
-                raise ValidationError("Invalid Discord ID format")
-
-            # Calculate cutoff date
-            cutoff_date = datetime.utcnow() - timedelta(days=days)
-
-            transactions = []
-            cursor = self.db.transactions.find({"user_id": user_id, "timestamp": {"$gte": cutoff_date}}).sort(
-                "timestamp", -1
-            )
-
-            async for transaction in cursor:
-                transactions.append(transaction)
-
-            return transactions
+                raise ValidationError("Invalid user ID format")
+            
+            # Calculate date range
+            end_date = datetime.utcnow()
+            start_date = end_date - timedelta(days=days)
+            
+            # Add projection to limit returned fields
+            projection = {
+                "user_id": 1,
+                "transaction_type": 1,
+                "amount": 1,
+                "timestamp": 1,
+                "description": 1,
+                "_id": 1
+            }
+            
+            # Optimize query with date range filter
+            query = optimize_query({
+                "user_id": user_id,
+                "timestamp": {"$gte": start_date, "$lte": end_date}
+            })
+            
+            cursor = self.db.transactions.find(query, projection)
+            cursor.sort("timestamp", -1)
+            
+            return await cursor.to_list(length=None)
         except Exception as e:
-            self.logger.error(
-                {
-                    "event": "Failed to get recent transactions",
-                    "error": str(e),
-                    "user_id": user_id,
-                    "level": "error",
-                }
-            )
-            raise DatabaseError(f"Failed to get recent transactions: {str(e)}")
+            self.logger.error(f"Error getting recent transactions: {str(e)}")
+            return []
 
-    @measure_performance("get_active_loan")
+    @measure_performance
+    @smart_cache(ttl=300)  # 5 minutes cache
     async def get_active_loan(self, user_id: str) -> dict[str, Any] | None:
         """Get active loan for a user"""
         try:
+            if not self._validate_id(user_id):
+                raise ValidationError("Invalid user ID format")
+
             account = await self.get_account(user_id)
             if not account:
                 return None
