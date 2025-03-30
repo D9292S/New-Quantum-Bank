@@ -111,4 +111,4 @@ class CreditScoreError(Exception):
 class InsufficientCreditScoreError(CreditScoreError):
     """Raised when a user's credit score is too low for a requested operation"""
 
-    pass 
+    pass
