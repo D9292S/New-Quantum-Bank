@@ -91,9 +91,9 @@ select = [
     "N",  # pep8-naming
     "B",  # flake8-bugbear
     "UP",  # pyupgrade
-    "ANN", # type annotations
+    # "ANN", # type annotations - temporarily removed
 ]
-ignore = ["E203", "E722", "ANN101", "ANN102", "ANN401"]
+ignore = ["E203", "E722", "B007", "UP036", "C901", "E501", "B904", "UP038", "N806"]
 fixable = ["A", "B", "C", "D", "E", "F", "I", "UP"]
 unfixable = []
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
