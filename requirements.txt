@@ -48,7 +48,7 @@ propcache==0.3.1
     # via
     #   aiohttp
     #   yarl
-psutil==5.9.8
+psutil==7.0.0
     # via quantum-bank-bot (pyproject.toml)
 py-cord==2.6.1
     # via quantum-bank-bot (pyproject.toml)
@@ -62,9 +62,9 @@ pynacl==1.5.0
     # via quantum-bank-bot (pyproject.toml)
 python-dateutil==2.9.0.post0
     # via quantum-bank-bot (pyproject.toml)
-python-dotenv==0.21.1
+python-dotenv==1.1.0
     # via quantum-bank-bot (pyproject.toml)
-pytz==2023.4
+pytz==2025.2
     # via
     #   quantum-bank-bot (pyproject.toml)
     #   mongomock
