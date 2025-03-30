@@ -35,7 +35,9 @@ jobs:
 
     - name: Check for vulnerabilities in dependencies
       run: |
-        safety check
+        # Use UV to sync dependencies to a file safety can check
+        uv pip freeze > safety-check-deps.txt
+        safety check --file safety-check-deps.txt
 
     - name: Upload bandit scan results
       uses: actions/upload-artifact@v4

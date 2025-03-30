@@ -31,9 +31,13 @@ jobs:
       run: |
         uv pip install pytest pytest-asyncio pytest-cov
         uv pip install -e .
+        # Create venv to make sure all dependencies are properly linked
+        uv venv
 
     - name: Run tests
       run: |
+        # Activate UV venv for better dependency resolution
+        source .venv/bin/activate
         pytest tests/unit/ --cov=./ --cov-report=xml -v
 
     - name: Upload coverage to Codecov
@@ -83,3 +87,8 @@ jobs:
 
       - name: 'Dependency Review'
         uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: critical
+          deny-licenses: GPL-3.0
+          # Skip dependency diff since we're only using UV and pyproject.toml
+          vulnerability-check: true
