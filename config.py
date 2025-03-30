@@ -47,6 +47,9 @@ class BotConfig:
     cluster_id: int | None = None
     total_clusters: int | None = None
 
+    # Heroku specific config
+    port: int = int(os.environ.get("PORT", 8080))
+
     # Derived settings
     is_clustered: bool = field(init=False)
     is_sharded: bool = field(init=False)
@@ -104,6 +107,8 @@ class BotConfig:
             # Clustering configuration
             cluster_id=int(os.getenv("CLUSTER_ID")) if os.getenv("CLUSTER_ID") else None,
             total_clusters=int(os.getenv("TOTAL_CLUSTERS")) if os.getenv("TOTAL_CLUSTERS") else None,
+            # Heroku specific config
+            port=int(os.getenv("PORT", 8080)),
         )
 
         # Override with command-line arguments if provided
@@ -142,4 +147,5 @@ class BotConfig:
             "total_clusters": self.total_clusters,
             "is_sharded": self.is_sharded,
             "is_clustered": self.is_clustered,
+            "port": self.port,
         }
