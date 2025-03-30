@@ -804,5 +804,13 @@ def run_bot() -> int:
 
 
 if __name__ == "__main__":
-    # Run the bot without asyncio.run() since discord.py creates its own event loop
+    # Handle Heroku deployment case where the command is passed incorrectly
+    if len(sys.argv) > 1 and sys.argv[1] == "python" and "launcher.py" in sys.argv[2:]:
+        # Remove the incorrect arguments
+        sys.argv = [sys.argv[0]]
+        # Set default values for Heroku
+        os.environ["CLUSTER_ID"] = "1"
+        os.environ["TOTAL_CLUSTERS"] = "1"
+        print("Detected Heroku deployment, setting cluster arguments automatically")
+    
     sys.exit(run_bot())
