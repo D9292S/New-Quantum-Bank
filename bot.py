@@ -36,7 +36,7 @@ class ClusterBot(discord.AutoShardedBot):
             try:
                 self.config = __import__("config")
             except ImportError:
-                self.config = type("Config", (), {"DEBUG": False})
+                self.config = type("Config", (), {"debug": False})
 
         # Performance tracking
         self.start_time = time.time()
@@ -66,7 +66,7 @@ class ClusterBot(discord.AutoShardedBot):
         )
 
         # Set activity status
-        self.activity = discord.Game(name=self.config.ACTIVITY_STATUS)
+        self.activity = discord.Game(name=self.config.activity_status)
 
         # Set up logging
         self.setup_logging()
@@ -156,7 +156,7 @@ class ClusterBot(discord.AutoShardedBot):
         if self.shard_ids:
             self.bot_logger.info(f"Running shards: {self.shard_ids}")
 
-        if self.config.DEBUG:
+        if self.config.debug:
             self.bot_logger.info("Debug mode enabled - verbose logging active")
 
     def log(self, category: str, level: str, message: str, **kwargs):
@@ -211,7 +211,7 @@ class ClusterBot(discord.AutoShardedBot):
     def _init_performance_managers(self):
         """Initialize performance and scalability managers"""
         # Initialize connection pool manager
-        mongo_uri = getattr(self.config, "MONGO_URI", None)
+        mongo_uri = getattr(self.config, "mongo_uri", None)
         self.conn_pool = ConnectionPoolManager(mongo_uri=mongo_uri, max_mongo_pool_size=100, max_http_connections=100)
 
         # Initialize cache manager with reasonable defaults
@@ -244,7 +244,7 @@ class ClusterBot(discord.AutoShardedBot):
             try:
                 module = importlib.import_module(f"cogs.{cog_name}")
                 metadata = getattr(module, "COG_METADATA", {"enabled": True})
-                if self.config.DEBUG:
+                if self.config.debug:
                     self.log("debug", "info", f"Cog {cog_name} metadata: {metadata}")
                 if metadata.get("enabled", True):
                     enabled_cogs.append(cog_name)

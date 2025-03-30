@@ -178,7 +178,7 @@ class Database(commands.Cog):
         self.connection_retries = 0
         self.max_retries = 5  # Increased from 3
         self.retry_delay = 5  # seconds
-        self.mongo_uri = self.bot.config.MONGO_URI
+        self.mongo_uri = self.bot.config.mongo_uri
 
         if not self.mongo_uri:
             self.logger.error("MONGO_URI is not set in config")
