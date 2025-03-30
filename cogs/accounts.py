@@ -10,7 +10,7 @@ import requests
 from discord.ext import commands, tasks
 from PIL import Image, ImageDraw, ImageFont
 
-from helper.exceptions import (
+from helpers.exceptions import (
     AccountAlreadyExistsError,
     AccountNotFoundError,
     AccountTypeError,

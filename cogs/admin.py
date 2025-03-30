@@ -6,7 +6,7 @@ import discord
 from discord.ext import commands
 
 from cogs.accounts import AccountError, TransactionError
-from helper.exceptions import ConnectionError, DatabaseError, ValidationError
+from helpers.exceptions import ConnectionError, DatabaseError, ValidationError
 
 COG_METADATA = {
     "name": "admin",

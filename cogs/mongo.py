@@ -21,7 +21,7 @@ from pymongo.errors import (
     ServerSelectionTimeoutError,
 )
 
-from helper.exceptions import (
+from helpers.exceptions import (
     AccountNotFoundError,
     CreditScoreError,
     DatabaseError,

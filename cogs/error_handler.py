@@ -4,7 +4,7 @@ from functools import wraps
 import discord
 from discord.ext import commands
 
-from helper.exceptions import (
+from helpers.exceptions import (
     AccountError,
     KYCError,
     PassbookError,
