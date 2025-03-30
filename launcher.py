@@ -809,7 +809,7 @@ if __name__ == "__main__":
         # Remove the incorrect arguments
         sys.argv = [sys.argv[0]]
         # Set default values for Heroku
-        os.environ["CLUSTER_ID"] = "1"
+        os.environ["CLUSTER_ID"] = "0"
         os.environ["TOTAL_CLUSTERS"] = "1"
         print("Detected Heroku deployment, setting cluster arguments automatically")
     
