@@ -8,6 +8,7 @@ WORKDIR /app
 # Copy only requirements first to leverage Docker cache
 COPY pyproject.toml .
 COPY .uv.toml .
+COPY LICENSE .
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
