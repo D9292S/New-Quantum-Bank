@@ -388,6 +388,31 @@ class ClusterBot(discord.AutoShardedBot):
         # Initialize process pool
         self.setup_process_pool()
 
+        # Set up web server for health checks
+        import threading
+        import http.server
+        import socketserver
+        
+        class HealthCheckHandler(http.server.SimpleHTTPRequestHandler):
+            def do_GET(self):
+                if self.path == '/health':
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/plain')
+                    self.end_headers()
+                    self.wfile.write(b'OK')
+                    return
+                self.send_response(404)
+                self.end_headers()
+        
+        def run_health_server():
+            port = int(os.environ.get('PORT', 8080))
+            with socketserver.TCPServer(("", port), HealthCheckHandler) as httpd:
+                print(f"Health check server started at port {port}")
+                httpd.serve_forever()
+        
+        # Start health check server in a separate thread
+        threading.Thread(target=run_health_server, daemon=True).start()
+        
         try:
             # Let discord.py handle the event loop
             super().run(self._token, *args, **kwargs)
