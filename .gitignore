@@ -5,9 +5,6 @@
 .env.test.local
 .env.production.local
 
-# Important files
-quantum_bank_command_reference
-
 # Python cache files
 __pycache__/
 *.py[cod]
@@ -35,7 +32,10 @@ ENV/
 env/
 .env/
 .venv/
+
+# Package managers
 .uv/
+# uv.lock is tracked for dependency consistency
 
 # IDE specific files
 .idea/
@@ -137,17 +137,7 @@ ipython_config.py
 # pyenv
 .python-version
 
-# pipenv
-#Pipfile.lock
-
-# UV
-#uv.lock
-
-# poetry
-#poetry.lock
-
 # pdm
-#pdm.lock
 .pdm.toml
 .pdm-python
 .pdm-build/
