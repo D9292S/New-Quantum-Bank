@@ -10,13 +10,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        
-      - name: Login to Heroku Container
-        uses: docker/login-action@v3
-        with:
-          registry: registry.heroku.com
-          username: ${{ secrets.HEROKU_EMAIL }}
-          password: ${{ secrets.HEROKU_API_KEY }}
+      
+      - name: Install Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
+          
+      - name: Login to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          heroku container:login
           
       - name: Build and Push to Heroku
         uses: akhileshns/heroku-deploy@v3.12.14
