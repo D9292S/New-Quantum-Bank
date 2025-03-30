@@ -27,7 +27,7 @@ jobs:
 
     - name: Install project with UV
       run: |
-        uv pip install -e .
+        uv pip install -e . --system
 
     - name: Run Bandit security scan
       run: |
