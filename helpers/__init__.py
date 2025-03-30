@@ -35,6 +35,29 @@ from .constants import (
     RED,
 )
 
+# Import exceptions
+from .exceptions import (
+    AccountAlreadyExistsError,
+    AccountError,
+    AccountNotFoundError,
+    AccountTypeError,
+    ConnectionError,
+    CreditScoreError,
+    DatabaseError,
+    InsufficientCreditScoreError,
+    InsufficientFundsError,
+    InvalidTransactionError,
+    KYCError,
+    LoanAlreadyExistsError,
+    LoanError,
+    LoanLimitError,
+    LoanRepaymentError,
+    PassbookError,
+    TransactionError,
+    TransactionLimitError,
+    ValidationError,
+)
+
 # Import rate limiter
 from .rate_limiter import RateLimiter, cooldown, rate_limit
 from .shard_manager import ShardManager
@@ -50,6 +73,26 @@ __all__ = [
     "CacheManager",
     "cached",
     "ShardManager",
+    # Add exceptions to __all__
+    "AccountAlreadyExistsError",
+    "AccountError",
+    "AccountNotFoundError",
+    "AccountTypeError",
+    "ConnectionError",
+    "CreditScoreError",
+    "DatabaseError",
+    "InsufficientCreditScoreError",
+    "InsufficientFundsError",
+    "InvalidTransactionError",
+    "KYCError",
+    "LoanAlreadyExistsError",
+    "LoanError",
+    "LoanLimitError",
+    "LoanRepaymentError",
+    "PassbookError",
+    "TransactionError",
+    "TransactionLimitError",
+    "ValidationError",
     # Add constants to __all__
     "BLUE",
     "RED",
