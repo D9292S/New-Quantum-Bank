@@ -1,0 +1,44 @@
+{
+  "name": "Quantum Bank Discord Bot",
+  "description": "A feature-rich Discord economy bot with advanced banking features",
+  "repository": "https://github.com/D9292S/New-Quantum-Bank",
+  "logo": "https://raw.githubusercontent.com/D9292S/New-Quantum-Bank/main/images/logo.png",
+  "keywords": ["discord", "bot", "python", "banking", "economy"],
+  "env": {
+    "BOT_TOKEN": {
+      "description": "Your Discord Bot Token",
+      "required": true
+    },
+    "MONGO_URI": {
+      "description": "MongoDB Connection URI",
+      "required": true
+    },
+    "ACTIVITY_STATUS": {
+      "description": "Custom bot status message",
+      "required": false,
+      "value": "Quantum Bank | /help"
+    },
+    "DEBUG": {
+      "description": "Enable debug mode (true/false)",
+      "required": false,
+      "value": "false"
+    },
+    "PERFORMANCE_MODE": {
+      "description": "Performance mode (low/medium/high)",
+      "required": false,
+      "value": "medium"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "success_url": "/status"
+} 

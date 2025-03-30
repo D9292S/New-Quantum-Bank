@@ -48,17 +48,21 @@ heroku config:set MONGO_URI=your_mongodb_uri -a your-app-name
 
 # Set other required environment variables
 heroku config:set MAL_CLIENT_ID=your_mal_client_id -a your-app-name
+
+# Set additional optional variables
+heroku config:set PERFORMANCE_MODE=medium -a your-app-name
+heroku config:set ACTIVITY_STATUS="Quantum Bank | /help" -a your-app-name
 ```
 
 ### 4. Deploy Using GitHub Actions
 
-The deployment workflow will trigger automatically when you push to the `main` branch. You can also trigger it manually:
+The deployment workflow will trigger automatically when you push to the `heroku-deployment` branch. You can also trigger it manually:
 
 1. Go to your repository on GitHub
 2. Navigate to Actions
 3. Select "Deploy to Heroku" workflow
 4. Click "Run workflow"
-5. Choose "main" branch and "production" environment
+5. Choose "heroku-deployment" branch
 6. Click "Run workflow"
 
 ### 5. Monitor the Deployment
@@ -73,9 +77,57 @@ You can monitor the deployment in:
 heroku logs --tail -a your-app-name
 ```
 
-## Health Checks
+## Health Checks and Monitoring
 
-The bot includes a health check endpoint at `/health` that returns a 200 OK response when the bot is running correctly. The GitHub Actions workflow uses this endpoint to verify that the deployment was successful.
+The bot includes several endpoints for monitoring:
+
+- `/health` - Returns a 200 OK response when the bot is running correctly
+- `/status` - Returns detailed status information in JSON format including uptime, guild count, etc.
+
+You can access these endpoints at:
+```
+https://your-app-name.herokuapp.com/health
+https://your-app-name.herokuapp.com/status
+```
+
+## Scaling
+
+Quantum Bank Bot uses both web and worker dynos:
+- **Web dyno**: Handles HTTP requests including health checks
+- **Worker dyno**: Runs the actual Discord bot functionality
+
+You can scale your bot's dynos using the Heroku CLI:
+
+```bash
+# Scale to 1 web and 1 worker dyno (recommended)
+heroku ps:scale web=1 worker=1 -a your-app-name
+
+# For hobby/free tier, use only worker:
+heroku ps:scale web=0 worker=1 -a your-app-name
+```
+
+## Advanced Configuration
+
+### Using Custom Domain
+
+```bash
+# Add your custom domain
+heroku domains:add bot.yourdomain.com -a your-app-name
+
+# Follow the DNS instructions provided by Heroku
+```
+
+### Using Heroku Metrics
+
+Heroku provides metrics for your application. To view metrics:
+
+1. Go to your Heroku dashboard
+2. Select your application
+3. Click on the "Metrics" tab
+
+### Continuous Deployment
+
+The GitHub Action workflow in `.github/workflows/heroku-deploy.yml` automatically deploys your bot whenever you push to the `heroku-deployment` branch.
 
 ## Troubleshooting
 
@@ -84,6 +136,8 @@ The bot includes a health check endpoint at `/health` that returns a 200 OK resp
 1. **Deployment Fails**: Check the GitHub Actions logs for specific error messages.
 2. **Bot Crashes on Startup**: Check the Heroku logs with `heroku logs --tail -a your-app-name`.
 3. **Bot Connects but Commands Don't Work**: Verify that all required environment variables are set correctly.
+4. **H10 - App Crashed**: This usually means the bot crashed. Check the logs for the reason.
+5. **R14 - Memory Quota Exceeded**: Your bot is using too much memory. Consider optimizing or upgrading your dyno.
 
 ### Checking Logs
 
@@ -95,16 +149,16 @@ heroku logs -a your-app-name
 heroku logs --tail -a your-app-name
 ```
 
-## Scaling
+### Restarting the Bot
 
-You can scale your bot's dynos using the Heroku CLI:
+If the bot is experiencing issues, you can restart it:
 
 ```bash
-# Scale to 1 worker dyno
-heroku ps:scale worker=1 -a your-app-name
+heroku dyno:restart -a your-app-name
 ```
 
 ## Additional Resources
 
 - [Heroku DevCenter](https://devcenter.heroku.com/)
-- [GitHub Actions Documentation](https://docs.github.com/en/actions) 
+- [GitHub Actions Documentation](https://docs.github.com/en/actions)
+- [Heroku Container Registry](https://devcenter.heroku.com/articles/container-registry-and-runtime) 

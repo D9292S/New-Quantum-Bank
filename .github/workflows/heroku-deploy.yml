@@ -36,15 +36,38 @@ jobs:
           usedocker: true
           justlogin: true
           
-      - name: Push to Heroku
+      - name: Push web and worker to Heroku
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
+          # Push and release web dyno
+          heroku container:push web --app ${{ secrets.HEROKU_APP_NAME }}
+          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}
+          
+          # Push and release worker dyno
           heroku container:push worker --app ${{ secrets.HEROKU_APP_NAME }}
           heroku container:release worker --app ${{ secrets.HEROKU_APP_NAME }}
+          
+      - name: Ensure correct scaling
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          heroku ps:scale web=1 worker=1 --app ${{ secrets.HEROKU_APP_NAME }}
           
       - name: Health check
         run: |
           echo "Waiting for deployment to complete..."
-          sleep 30
-          curl -f https://${{ secrets.HEROKU_APP_NAME }}.herokuapp.com/health || echo "Health check endpoint not available for worker dyno" 
+          sleep 45
+          curl -f https://${{ secrets.HEROKU_APP_NAME }}.herokuapp.com/health || echo "Health check failed - check logs with 'heroku logs --tail'"
+          
+      - name: Status check
+        run: |
+          # Verify web status endpoint is responding
+          sleep 15
+          curl -f https://${{ secrets.HEROKU_APP_NAME }}.herokuapp.com/status || echo "Status endpoint not available - check logs"
+          
+      - name: Deployment summary
+        run: |
+          echo "✅ Deployment completed"
+          echo "📊 Status: https://${{ secrets.HEROKU_APP_NAME }}.herokuapp.com/status"
+          echo "🔍 Logs: Run 'heroku logs --tail --app ${{ secrets.HEROKU_APP_NAME }}'"

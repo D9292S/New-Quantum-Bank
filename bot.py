@@ -392,8 +392,13 @@ class ClusterBot(discord.AutoShardedBot):
         import http.server
         import socketserver
         import threading
+        import json
 
         class HealthCheckHandler(http.server.SimpleHTTPRequestHandler):
+            def __init__(self, *args, bot_instance=None, **kwargs):
+                self.bot_instance = bot_instance
+                super().__init__(*args, **kwargs)
+                
             def do_GET(self):  # noqa: N802
                 if self.path == "/health":
                     self.send_response(200)
@@ -401,17 +406,42 @@ class ClusterBot(discord.AutoShardedBot):
                     self.end_headers()
                     self.wfile.write(b"OK")
                     return
-                self.send_response(404)
-                self.end_headers()
+                elif self.path == "/status":
+                    # Only provide status if explicitly requested
+                    self.send_response(200)
+                    self.send_header("Content-type", "application/json")
+                    self.end_headers()
+                    
+                    if self.bot_instance:
+                        status = {
+                            "status": "online",
+                            "uptime": time.time() - self.bot_instance.start_time,
+                            "guilds": len(self.bot_instance.guilds),
+                            "latency_ms": round(self.bot_instance.latency * 1000, 2) if self.bot_instance.latency else None,
+                            "shard_count": self.bot_instance.shard_count or 1,
+                            "version": "1.0.0",
+                        }
+                    else:
+                        status = {"status": "starting"}
+                    
+                    self.wfile.write(json.dumps(status).encode())
+                    return
+                else:
+                    self.send_response(404)
+                    self.end_headers()
 
-        def run_health_server():
+        def run_health_server(bot_instance=None):
             port = int(os.environ.get("PORT", 8080))
-            with socketserver.TCPServer(("", port), HealthCheckHandler) as httpd:
+            
+            # Create handler with bot reference
+            handler = lambda *args, **kwargs: HealthCheckHandler(*args, bot_instance=bot_instance, **kwargs)
+            
+            with socketserver.TCPServer(("", port), handler) as httpd:
                 print(f"Health check server started at port {port}")
                 httpd.serve_forever()
 
         # Start health check server in a separate thread
-        threading.Thread(target=run_health_server, daemon=True).start()
+        threading.Thread(target=run_health_server, args=(self,), daemon=True).start()
 
         try:
             # Let discord.py handle the event loop
