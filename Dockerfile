@@ -16,13 +16,12 @@ COPY README.md .
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv using pip first (more reliable in Docker)
-RUN pip install uv
-
-# Add uv to PATH
-ENV PATH="/root/.cargo/bin:${PATH}"
+# Install UV directly in /usr/local/bin
+RUN pip install uv && \
+    ln -sf $(which uv) /usr/local/bin/uv
 
 # Install dependencies using uv
 RUN uv pip install ".[high-performance]" --system
@@ -37,10 +36,12 @@ LABEL maintainer="Quantum Bank Team" \
 
 WORKDIR /app
 
+# Install UV in the final stage
+RUN pip install uv
+
 # Copy installed packages from builder stage
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
-COPY --from=builder /root/.cargo/bin/uv /usr/local/bin/uv
 
 # Copy application code
 COPY . .

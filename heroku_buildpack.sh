@@ -9,6 +9,7 @@ apt-get update
 apt-get install -y --no-install-recommends \
     build-essential \
     curl \
+    git \
     python3.12 \
     python3.12-dev \
     python3.12-venv \
@@ -21,8 +22,14 @@ rm -rf /var/lib/apt/lists/*
 python3.12 -m venv /app/.venv
 source /app/.venv/bin/activate
 
-# Install UV using pip (more reliable than curl install)
+# Install UV using pip and ensure it's in PATH
 pip install uv
+ln -sf $(which uv) /usr/local/bin/uv
+export PATH="/usr/local/bin:$PATH"
+
+# Verify UV installation
+which uv
+uv --version
 
 # Install project dependencies using UV
 cd /app
