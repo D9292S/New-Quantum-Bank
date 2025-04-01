@@ -18,8 +18,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv directly using the official install script
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+# Install uv using pip first (more reliable in Docker)
+RUN pip install uv
+
+# Add uv to PATH
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install dependencies using uv
 RUN uv pip install ".[high-performance]" --system
@@ -37,6 +40,7 @@ WORKDIR /app
 # Copy installed packages from builder stage
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=builder /root/.cargo/bin/uv /usr/local/bin/uv
 
 # Copy application code
 COPY . .

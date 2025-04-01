@@ -37,6 +37,16 @@ jobs:
           heroku config:set QUERY_CACHE_SIZE=2000 --app ${{ secrets.HEROKU_APP_NAME }}
           heroku config:set QUERY_CACHE_TTL=600 --app ${{ secrets.HEROKU_APP_NAME }}
           
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          
+      - name: Install and configure UV
+        run: |
+          pip install uv
+          uv --version
+          
       - name: Build and Push to Heroku
         uses: akhileshns/heroku-deploy@v3.12.14
         with:
