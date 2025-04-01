@@ -22,10 +22,11 @@ rm -rf /var/lib/apt/lists/*
 python3.12 -m venv /app/.venv
 source /app/.venv/bin/activate
 
-# Install UV using pip and ensure it's in PATH
-pip install uv
-ln -sf $(which uv) /usr/local/bin/uv
-export PATH="/usr/local/bin:$PATH"
+# Install UV using pip with --user flag
+python -m pip install --user uv
+mkdir -p /usr/local/bin
+cp ~/.local/bin/uv /usr/local/bin/uv
+chmod +x /usr/local/bin/uv
 
 # Verify UV installation
 which uv
@@ -33,7 +34,7 @@ uv --version
 
 # Install project dependencies using UV
 cd /app
-uv pip install ".[high-performance]" --system
+UV_SYSTEM_PYTHON=1 uv pip install ".[high-performance]" --system
 
 # Clean up
 apt-get clean

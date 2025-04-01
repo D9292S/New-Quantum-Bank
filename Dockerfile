@@ -19,12 +19,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install UV directly in /usr/local/bin
-RUN pip install uv && \
-    ln -sf $(which uv) /usr/local/bin/uv
+# Install UV using pip with --user flag
+RUN python -m pip install --user uv && \
+    mkdir -p /usr/local/bin && \
+    cp ~/.local/bin/uv /usr/local/bin/uv && \
+    chmod +x /usr/local/bin/uv
+
+# Verify UV installation
+RUN uv --version
 
 # Install dependencies using uv
-RUN uv pip install ".[high-performance]" --system
+RUN UV_SYSTEM_PYTHON=1 uv pip install ".[high-performance]" --system
 
 #####################
 # FINAL STAGE
@@ -36,12 +41,9 @@ LABEL maintainer="Quantum Bank Team" \
 
 WORKDIR /app
 
-# Install UV in the final stage
-RUN pip install uv
-
-# Copy installed packages from builder stage
+# Copy installed packages and UV from builder stage
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=builder /usr/local/bin/uv /usr/local/bin/uv
 
 # Copy application code
 COPY . .
