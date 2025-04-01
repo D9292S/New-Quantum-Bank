@@ -13,8 +13,7 @@
 [![Dependabot](https://img.shields.io/github/actions/workflow/status/D9292S/New-Quantum-Bank/dependabot-auto-merge.yml?label=Dependabot)](https://github.com/D9292S/New-Quantum-Bank/actions/workflows/dependabot-auto-merge.yml)
 [![Code Size](https://img.shields.io/github/languages/code-size/D9292S/New-Quantum-Bank)](https://github.com/D9292S/New-Quantum-Bank)
 [![Top Language](https://img.shields.io/github/languages/top/D9292S/New-Quantum-Bank)](https://github.com/D9292S/New-Quantum-Bank)
-[![Code Coverage](https://img.shields.io/codecov/c/git
-hub/D9292S/New-Quantum-Bank)](https://codecov.io/gh/D9292S/New-Quantum-Bank)
+[![Code Coverage](https://img.shields.io/codecov/c/github/D9292S/New-Quantum-Bank)](https://codecov.io/gh/D9292S/New-Quantum-Bank)
 [![Contributors](https://img.shields.io/github/contributors/D9292S/New-Quantum-Bank)](https://github.com/D9292S/New-Quantum-Bank/contributors)
 [![GitHub Issues](https://img.shields.io/github/issues/D9292S/New-Quantum-Bank)](https://github.com/D9292S/New-Quantum-Bank/issues)
 [![Last Commit](https://img.shields.io/github/last-commit/D9292S/New-Quantum-Bank)](https://github.com/D9292S/New-Quantum-Bank)
