@@ -43,28 +43,9 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-test-matrix.outputs.test-matrix) }}
     
-    services:
-      mongodb:
-        image: mongo:6.0
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
       
-      # Mock Discord API service for testing
-      mock-discord:
-        image: wiremock/wiremock:latest
-        ports:
-          - 8080:8080
-        options: >-
-          --health-cmd "curl -f http://localhost:8080/__admin/mappings || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 3
-    
     steps:
       - uses: actions/checkout@v4
       
@@ -76,64 +57,21 @@ jobs:
       - name: Install UV
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          echo "${{ env.HOME }}/.cargo/bin" >> $GITHUB_PATH
       
       - name: Install dependencies
         run: |
           uv pip install --system pytest pytest-asyncio pytest-cov pytest-benchmark
           uv pip install -e . --system
       
-      - name: Initialize MongoDB
-        run: |
-          mongosh < mongo-init/init-mongo.js
-      
-      - name: Configure mock Discord API
-        run: |
-          # Set up mock Discord API endpoints
-          curl -X POST http://localhost:8080/__admin/mappings \
-            -H 'Content-Type: application/json' \
-            -d '{
-              "request": {
-                "method": "GET",
-                "url": "/api/v10/gateway/bot"
-              },
-              "response": {
-                "status": 200,
-                "jsonBody": {
-                  "url": "wss://gateway.discord.gg",
-                  "shards": 1,
-                  "session_start_limit": {
-                    "total": 1000,
-                    "remaining": 999,
-                    "reset_after": 86400000,
-                    "max_concurrency": 1
-                  }
-                },
-                "headers": {
-                  "Content-Type": "application/json"
-                }
-              }
-            }'
-      
-      - name: Set up test environment
-        run: |
-          cp .env.example .env
-          sed -i 's/MONGODB_URI=.*/MONGODB_URI=mongodb:\/\/localhost:27017\/quantum_test/' .env
-          sed -i 's/BOT_TOKEN=.*/BOT_TOKEN=mock_token/' .env
-          sed -i 's/DISCORD_API_BASE_URL=.*/DISCORD_API_BASE_URL=http:\/\/localhost:8080/' .env
-          
-          # Create test directories
-          mkdir -p test-results
-          mkdir -p test-artifacts
-      
       - name: Run database integration tests
         if: ${{ matrix.test-suite == 'database' }}
         run: |
           echo "Running database integration tests..."
-          pytest tests/integration/test_mongodb_connection.py -v --junitxml=test-results/database-results.xml
+          uv python -m pytest tests/integration/test_mongodb_connection.py -v --junitxml=test-results/database-results.xml
           
           # Run additional database tests
-          pytest tests/integration/database/ -v --junitxml=test-results/database-additional-results.xml
+          uv python -m pytest tests/integration/database/ -v --junitxml=test-results/database-additional-results.xml
       
       - name: Run API integration tests
         if: ${{ matrix.test-suite == 'api' }}
@@ -141,14 +79,14 @@ jobs:
           echo "Running API integration tests..."
           
           # Start a test instance of the bot with mock configuration
-          python launcher.py --test-mode --api-only &
+          uv python launcher.py --test-mode --api-only &
           BOT_PID=$!
           
           # Wait for bot to initialize
           sleep 10
           
           # Run API tests
-          pytest tests/integration/api/ -v --junitxml=test-results/api-results.xml
+          uv python -m pytest tests/integration/api/ -v --junitxml=test-results/api-results.xml
           
           # Terminate the bot process
           kill $BOT_PID
@@ -159,10 +97,10 @@ jobs:
           echo "Running performance tests..."
           
           # Run performance benchmarks
-          pytest tests/performance/ --benchmark-json=test-results/benchmark.json -v
+          uv python -m pytest tests/performance/ --benchmark-json=test-results/benchmark.json -v
           
           # Generate performance report
-          python tools/run_performance_tests.py --report-only --input test-results/benchmark.json --output test-artifacts/performance-report.md
+          uv python tools/run_performance_tests.py --report-only --input test-results/benchmark.json --output test-artifacts/performance-report.md
       
       - name: Upload test results
         uses: actions/upload-artifact@v4
