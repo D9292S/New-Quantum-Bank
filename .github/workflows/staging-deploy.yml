@@ -1,0 +1,213 @@
+name: Staging Deployment Pipeline
+
+on:
+  push:
+    branches:
+      - develop
+      - feature/*
+  pull_request:
+    types: [labeled]
+    branches:
+      - develop
+  workflow_dispatch:
+    inputs:
+      deploy_type:
+        description: 'Type of deployment'
+        required: true
+        default: 'standard'
+        type: choice
+        options:
+          - standard
+          - canary
+
+env:
+  STAGING_APP_NAME: quantum-superbot-staging
+  CANARY_APP_NAME: quantum-superbot-canary
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'deploy-to-staging'))
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          uv pip install --system pytest pytest-asyncio pytest-cov
+          uv pip install -e . --system
+
+      - name: Initialize MongoDB
+        run: |
+          mongosh < mongo-init/init-mongo.js
+
+      - name: Run integration tests
+        run: |
+          pytest tests/integration/ -v
+          
+      - name: Run end-to-end tests
+        run: |
+          # Setup test environment
+          cp .env.example .env
+          sed -i 's/MONGODB_URI=.*/MONGODB_URI=mongodb:\/\/localhost:27017\/quantum_test/' .env
+          sed -i 's/BOT_TOKEN=.*/BOT_TOKEN=mock_token/' .env
+          
+          # Run e2e tests with mock Discord API
+          python -m tests.e2e.run_tests
+          
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 7
+
+  build-staging:
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/${{ github.repository }}/staging
+          tags: |
+            type=sha,format=short
+            type=ref,event=branch
+            latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            ENVIRONMENT=staging
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: build-staging
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
+          
+      - name: Login to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          heroku container:login
+      
+      - name: Determine deployment type
+        id: deploy_type
+        run: |
+          if [[ "${{ github.event.inputs.deploy_type }}" == "canary" ]]; then
+            echo "app_name=${{ env.CANARY_APP_NAME }}" >> $GITHUB_OUTPUT
+            echo "traffic_percentage=20" >> $GITHUB_OUTPUT
+          else
+            echo "app_name=${{ env.STAGING_APP_NAME }}" >> $GITHUB_OUTPUT
+            echo "traffic_percentage=100" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Configure Heroku environment
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          # Set staging-specific configuration
+          heroku config:set ENVIRONMENT=staging --app ${{ steps.deploy_type.outputs.app_name }}
+          heroku config:set LOG_LEVEL=DEBUG --app ${{ steps.deploy_type.outputs.app_name }}
+          heroku config:set PERFORMANCE_MODE=medium --app ${{ steps.deploy_type.outputs.app_name }}
+          
+          # Set feature flags for staging
+          heroku config:set ENABLE_EXPERIMENTAL_FEATURES=true --app ${{ steps.deploy_type.outputs.app_name }}
+          
+          # Set traffic percentage for canary deployments
+          heroku config:set TRAFFIC_PERCENTAGE=${{ steps.deploy_type.outputs.traffic_percentage }} --app ${{ steps.deploy_type.outputs.app_name }}
+      
+      - name: Deploy to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          # Pull the image from GitHub Container Registry
+          docker pull ghcr.io/${{ github.repository }}/staging:latest
+          
+          # Tag for Heroku
+          docker tag ghcr.io/${{ github.repository }}/staging:latest registry.heroku.com/${{ steps.deploy_type.outputs.app_name }}/web
+          
+          # Push to Heroku
+          docker push registry.heroku.com/${{ steps.deploy_type.outputs.app_name }}/web
+          
+          # Release the container
+          heroku container:release web --app ${{ steps.deploy_type.outputs.app_name }}
+      
+      - name: Run post-deployment checks
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          # Wait for app to start
+          sleep 30
+          
+          # Run post-deployment script
+          heroku run python heroku_scripts/post_deploy.py --app ${{ steps.deploy_type.outputs.app_name }}
+          
+          # Check health endpoint
+          curl -f https://${{ steps.deploy_type.outputs.app_name }}.herokuapp.com/health || echo "Health check failed"
+      
+      - name: Create deployment record
+        uses: chrnorm/deployment-action@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          environment: ${{ steps.deploy_type.outputs.app_name }}
+          initial-status: success
+          
+  notify-team:
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: always()
+    steps:
+      - name: Notify on success
+        if: ${{ needs.deploy-staging.result == 'success' }}
+        run: |
+          echo "Staging deployment successful! Notification would be sent here."
+          # Add Discord webhook notification here
+      
+      - name: Notify on failure
+        if: ${{ needs.deploy-staging.result != 'success' }}
+        run: |
+          echo "Staging deployment failed! Notification would be sent here."
+          # Add Discord webhook notification here

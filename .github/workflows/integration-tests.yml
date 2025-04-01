@@ -1,0 +1,260 @@
+name: Integration Tests
+
+on:
+  push:
+    branches:
+      - develop
+      - feature/*
+  pull_request:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - database
+          - api
+          - performance
+
+jobs:
+  setup-test-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      test-matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          if [[ "${{ github.event.inputs.test_suite }}" == "all" || "${{ github.event.inputs.test_suite }}" == "" ]]; then
+            echo "matrix={\"test-suite\":[\"database\",\"api\",\"performance\"]}" >> $GITHUB_OUTPUT
+          else
+            echo "matrix={\"test-suite\":[\"${{ github.event.inputs.test_suite }}\"]}" >> $GITHUB_OUTPUT
+          fi
+
+  integration-tests:
+    needs: setup-test-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup-test-matrix.outputs.test-matrix) }}
+    
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      # Mock Discord API service for testing
+      mock-discord:
+        image: wiremock/wiremock:latest
+        ports:
+          - 8080:8080
+        options: >-
+          --health-cmd "curl -f http://localhost:8080/__admin/mappings || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      
+      - name: Install dependencies
+        run: |
+          uv pip install --system pytest pytest-asyncio pytest-cov pytest-benchmark
+          uv pip install -e . --system
+      
+      - name: Initialize MongoDB
+        run: |
+          mongosh < mongo-init/init-mongo.js
+      
+      - name: Configure mock Discord API
+        run: |
+          # Set up mock Discord API endpoints
+          curl -X POST http://localhost:8080/__admin/mappings \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "request": {
+                "method": "GET",
+                "url": "/api/v10/gateway/bot"
+              },
+              "response": {
+                "status": 200,
+                "jsonBody": {
+                  "url": "wss://gateway.discord.gg",
+                  "shards": 1,
+                  "session_start_limit": {
+                    "total": 1000,
+                    "remaining": 999,
+                    "reset_after": 86400000,
+                    "max_concurrency": 1
+                  }
+                },
+                "headers": {
+                  "Content-Type": "application/json"
+                }
+              }
+            }'
+      
+      - name: Set up test environment
+        run: |
+          cp .env.example .env
+          sed -i 's/MONGODB_URI=.*/MONGODB_URI=mongodb:\/\/localhost:27017\/quantum_test/' .env
+          sed -i 's/BOT_TOKEN=.*/BOT_TOKEN=mock_token/' .env
+          sed -i 's/DISCORD_API_BASE_URL=.*/DISCORD_API_BASE_URL=http:\/\/localhost:8080/' .env
+          
+          # Create test directories
+          mkdir -p test-results
+          mkdir -p test-artifacts
+      
+      - name: Run database integration tests
+        if: ${{ matrix.test-suite == 'database' }}
+        run: |
+          echo "Running database integration tests..."
+          pytest tests/integration/test_mongodb_connection.py -v --junitxml=test-results/database-results.xml
+          
+          # Run additional database tests
+          pytest tests/integration/database/ -v --junitxml=test-results/database-additional-results.xml
+      
+      - name: Run API integration tests
+        if: ${{ matrix.test-suite == 'api' }}
+        run: |
+          echo "Running API integration tests..."
+          
+          # Start a test instance of the bot with mock configuration
+          python launcher.py --test-mode --api-only &
+          BOT_PID=$!
+          
+          # Wait for bot to initialize
+          sleep 10
+          
+          # Run API tests
+          pytest tests/integration/api/ -v --junitxml=test-results/api-results.xml
+          
+          # Terminate the bot process
+          kill $BOT_PID
+      
+      - name: Run performance tests
+        if: ${{ matrix.test-suite == 'performance' }}
+        run: |
+          echo "Running performance tests..."
+          
+          # Run performance benchmarks
+          pytest tests/performance/ --benchmark-json=test-results/benchmark.json -v
+          
+          # Generate performance report
+          python tools/run_performance_tests.py --report-only --input test-results/benchmark.json --output test-artifacts/performance-report.md
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.test-suite }}
+          path: |
+            test-results/
+            test-artifacts/
+          retention-days: 14
+  
+  test-summary:
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          path: all-test-results
+      
+      - name: Generate test summary
+        run: |
+          echo "# Integration Test Summary" > test-summary.md
+          echo "## Test Results" >> test-summary.md
+          
+          # Process test results
+          find all-test-results -name "*.xml" -type f | while read xml_file; do
+            suite_name=$(basename "$xml_file" | sed 's/-results.xml//')
+            
+            # Extract test counts using grep and sed
+            total=$(grep -o 'tests="[0-9]*"' "$xml_file" | sed 's/tests="\([0-9]*\)"/\1/')
+            failures=$(grep -o 'failures="[0-9]*"' "$xml_file" | sed 's/failures="\([0-9]*\)"/\1/')
+            errors=$(grep -o 'errors="[0-9]*"' "$xml_file" | sed 's/errors="\([0-9]*\)"/\1/')
+            skipped=$(grep -o 'skipped="[0-9]*"' "$xml_file" | sed 's/skipped="\([0-9]*\)"/\1/')
+            
+            # Calculate passed tests
+            passed=$((total - failures - errors - skipped))
+            
+            # Append to summary
+            echo "## ${suite_name^} Tests" >> test-summary.md
+            echo "- Total: $total" >> test-summary.md
+            echo "- Passed: $passed" >> test-summary.md
+            echo "- Failed: $failures" >> test-summary.md
+            echo "- Errors: $errors" >> test-summary.md
+            echo "- Skipped: $skipped" >> test-summary.md
+            echo "" >> test-summary.md
+          done
+          
+          # Calculate overall totals
+          total_tests=$(find all-test-results -name "*.xml" -type f -exec grep -o 'tests="[0-9]*"' {} \; | sed 's/tests="\([0-9]*\)"/\1/' | awk '{sum+=$1} END {print sum}')
+          total_failures=$(find all-test-results -name "*.xml" -type f -exec grep -o 'failures="[0-9]*"' {} \; | sed 's/failures="\([0-9]*\)"/\1/' | awk '{sum+=$1} END {print sum}')
+          total_errors=$(find all-test-results -name "*.xml" -type f -exec grep -o 'errors="[0-9]*"' {} \; | sed 's/errors="\([0-9]*\)"/\1/' | awk '{sum+=$1} END {print sum}')
+          total_skipped=$(find all-test-results -name "*.xml" -type f -exec grep -o 'skipped="[0-9]*"' {} \; | sed 's/skipped="\([0-9]*\)"/\1/' | awk '{sum+=$1} END {print sum}')
+          total_passed=$((total_tests - total_failures - total_errors - total_skipped))
+          
+          # Calculate success rate
+          if [ "$total_tests" -gt 0 ]; then
+            success_rate=$(echo "scale=2; ($total_passed * 100) / $total_tests" | bc)
+          else
+            success_rate="0.00"
+          fi
+          
+          # Append overall summary
+          echo "## Overall Summary" >> test-summary.md
+          echo "- Total Tests: $total_tests" >> test-summary.md
+          echo "- Passed: $total_passed" >> test-summary.md
+          echo "- Failed: $total_failures" >> test-summary.md
+          echo "- Errors: $total_errors" >> test-summary.md
+          echo "- Skipped: $total_skipped" >> test-summary.md
+          echo "- Success Rate: ${success_rate}%" >> test-summary.md
+      
+      - name: Upload test summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-summary
+          path: test-summary.md
+          retention-days: 14
+      
+      - name: Post summary comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('test-summary.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
