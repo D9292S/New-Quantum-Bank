@@ -1,15 +1,15 @@
 # Quantum Bank Discord Bot
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/downloads/)
+[![Python Version](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/downloads/)
 [![PyPI Version](https://img.shields.io/pypi/v/quantum-bank)](https://pypi.org/project/quantum-bank/)
 [![Downloads](https://img.shields.io/pypi/dm/quantum-bank)](https://pypi.org/project/quantum-bank/)
-[![Discord](https://img.shields.io/discord/123456789012345678?label=Discord&logo=discord)](https://discord.gg/Z5u4FvDJ5C)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/your-username/quantum-bank-bot/ci.yml)](https://github.com/D9292S/New-Quantum-Bank/actions)
-[![Code Coverage](https://img.shields.io/codecov/c/github/your-username/quantum-bank-bot)](https://codecov.io/gh/D9292S/New-Quantum-Bank)
-[![Contributors](https://img.shields.io/github/contributors/your-username/quantum-bank-bot)](https://github.com/D9292S/New-Quantum-Bank/contributors)
-[![GitHub Issues](https://img.shields.io/github/issues/your-username/quantum-bank-bot)](https://github.com/D9292S/New-Quantum-Bank/issues)
-[![Last Commit](https://img.shields.io/github/last-commit/your-username/quantum-bank-bot)](https://github.com/D9292S/New-Quantum-Bank)
+[![Discord](https://img.shields.io/discord/987654321?label=Discord&logo=discord)](https://discord.gg/Z5u4FvDJ5C)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/D9292S/New-Quantum-Bank/ci.yml)](https://github.com/D9292S/New-Quantum-Bank/actions)
+[![Code Coverage](https://img.shields.io/codecov/c/github/D9292S/New-Quantum-Bank)](https://codecov.io/gh/D9292S/New-Quantum-Bank)
+[![Contributors](https://img.shields.io/github/contributors/D9292S/New-Quantum-Bank)](https://github.com/D9292S/New-Quantum-Bank/contributors)
+[![GitHub Issues](https://img.shields.io/github/issues/D9292S/New-Quantum-Bank)](https://github.com/D9292S/New-Quantum-Bank/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/D9292S/New-Quantum-Bank)](https://github.com/D9292S/New-Quantum-Bank)
 
 Quantum Bank is a feature-rich Discord economy bot with advanced banking features, built using Discord.py and MongoDB.
 
