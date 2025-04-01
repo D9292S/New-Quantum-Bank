@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Environment Validation Script for Quantum Bank Bot
+Environment Validation Script for Quantum Superbot
 --------------------------------------------------
 This script checks that all requirements are met for running the bot:
 - Python version is 3.12+
@@ -145,7 +145,7 @@ def check_system_dependencies():
 def validate_environment():
     """Validate the entire development environment."""
     print_color(BOLD + BLUE, "==================================================")
-    print_color(BOLD + BLUE, "   Quantum Bank Bot Environment Validation")
+    print_color(BOLD + BLUE, "   Quantum Superbot Environment Validation")
     print_color(BOLD + BLUE, "==================================================")
     print()
     
@@ -176,7 +176,7 @@ def validate_environment():
     
     print()
     if all_passed:
-        print_color(GREEN, "✅ All checks passed! Your environment is ready for Quantum Bank Bot.")
+        print_color(GREEN, "✅ All checks passed! Your environment is ready for Quantum Superbot.")
     else:
         print_color(RED, "❌ Some checks failed. Please fix the issues above before proceeding.")
     

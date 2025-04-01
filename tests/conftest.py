@@ -1,4 +1,4 @@
-"""Pytest configuration for Quantum Bank Discord bot tests."""
+"""Pytest configuration for Quantum Superbot Discord bot tests."""
 
 import asyncio
 import os
@@ -60,7 +60,7 @@ def mock_bot():
     mock = MagicMock()
     mock.config = MagicMock()
     mock.config.MONGO_URI = "mongodb://localhost:27017"
-    mock.config.MONGO_DB_NAME = "banking_bot"
+    mock.config.MONGO_DB_NAME = "superbot_test"
     # Use get_running_loop instead of get_event_loop
     mock.loop = asyncio.get_running_loop()
     return mock

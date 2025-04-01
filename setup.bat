@@ -1,10 +1,10 @@
 @echo off
-:: Quantum Bank Bot Setup Script for Windows
+:: Quantum Superbot Setup Script for Windows
 :: This script helps new users set up the development environment using the uv package manager
 
 echo.
 echo =======================================
-echo   Quantum Bank Bot Setup Script
+echo   Quantum Superbot Setup Script
 echo =======================================
 echo.
 

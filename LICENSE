@@ -1,21 +1,102 @@
-MIT License
+Educational Use and Reference License (EURL)
 
-Copyright (c) 2025 Quantum Bank Discord Bot
+Copyright (c) 2024 Quantum Superbot
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+TERMS AND CONDITIONS
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. Educational and Reference Use
+   This software and associated documentation files (the "Software") are provided
+   for educational and reference purposes only. The primary intent is to serve
+   as a learning resource for Discord bot development, multi-purpose bot implementation,
+   and performance optimization techniques.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+2. Restrictions
+   a. You may NOT use this code to create, host, or run your own instance of the bot.
+   b. You may NOT distribute copies of this software or derivative works.
+   c. You may NOT use any part of this code for commercial purposes.
+   d. You may NOT remove or modify this license notice from any file.
+   e. You may NOT create similar banking bots using this code as reference.
+   f. You may NOT offer services or consultancy based on this codebase.
+   g. You may NOT use the database schemas or structures in other projects.
+   h. You may NOT copy the performance optimization techniques for commercial use.
+
+3. Permitted Uses
+   a. Study and analyze the code for educational purposes
+   b. Reference the implementation techniques for learning
+   c. Use small code snippets (maximum 10 lines) with proper attribution
+   d. Create documentation or educational content about the code
+   e. Use as teaching material in educational institutions
+   f. Include in academic research with proper citation
+   g. Create proof-of-concept projects for learning (non-production)
+
+4. Attribution Requirements
+   If you reference or use any part of this code in educational content:
+   a. You must provide clear attribution to "Quantum Superbot"
+   b. Include a link to the original repository
+   c. Include this license in any shared code snippets
+   d. Specify which parts of the code are being referenced
+   e. Clearly state that this is an educational reference
+
+5. No Warranty
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+
+6. Intellectual Property
+   All rights, title, and interest in and to the Software (including all
+   intellectual property rights) shall remain with the original copyright holder.
+   This includes but is not limited to:
+   a. The bot's architecture and design patterns
+   b. Performance optimization techniques
+   c. Database schemas and structures
+   d. Command implementation logic
+   e. Custom algorithms and solutions
+   f. Documentation and technical specifications
+
+7. Specific Protected Components
+   The following components are specifically protected and may not be copied or reused:
+   a. Multi-purpose command system implementation
+   b. Cross-feature integration logic
+   c. Performance monitoring systems
+   d. Memory optimization techniques
+   e. Database optimization strategies
+   f. Custom caching mechanisms
+   g. Security implementations
+   h. Advanced feature management system
+   i. Dynamic command handling
+   j. Resource optimization algorithms
+   k. Cross-platform integration methods
+   l. Custom event handling systems
+
+8. Educational Institution Use
+   Educational institutions may use this software for teaching purposes under the following conditions:
+   a. The software is used only in educational contexts
+   b. Students are informed of this license
+   c. No modifications are deployed in production
+   d. Attribution is maintained in all materials
+   e. Usage is reported to the copyright holder
+
+9. Enforcement
+   a. Any use of the Software in violation of this license will be subject to
+      copyright law and may result in legal action.
+   b. Violations may result in:
+      - Immediate cease and desist requirements
+      - Legal proceedings
+      - Public disclosure of violations
+      - Reporting to relevant platforms and services
+
+10. Additional Terms
+    a. The copyright holder reserves the right to modify these terms
+    b. Separate agreements may be negotiated for commercial use
+    c. Contributors retain their rights while granting usage rights
+    d. Derivative educational content must be freely available
+
+For permissions beyond the scope of this license, please contact the copyright holder.
+
+Note: This license is specifically designed for the Quantum Superbot and its educational purpose.
+Any attempt to circumvent these terms or create similar multi-purpose bots will be treated as
+a violation of these terms.

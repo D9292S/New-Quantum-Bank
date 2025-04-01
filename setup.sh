@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Quantum Bank Bot Setup Script
+# Quantum Superbot Setup Script
 # This script helps new users set up the development environment using the uv package manager
 
 set -euo pipefail
@@ -12,7 +12,7 @@ YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}=======================================${NC}"
-echo -e "${BLUE}  Quantum Bank Bot Setup Script${NC}"
+echo -e "${BLUE}  Quantum Superbot Setup Script${NC}"
 echo -e "${BLUE}=======================================${NC}"
 
 # Check if Python 3.12+ is installed

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Performance test runner for Quantum Bank
+Performance test runner for Quantum Superbot
 
 This script runs performance tests and displays a performance report.
 """
@@ -165,7 +165,7 @@ async def generate_performance_report():
 def display_report(report):
     """Display the performance report in a user-friendly format"""
     print("\n" + "="*80)
-    print(f"QUANTUM BANK PERFORMANCE REPORT - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"QUANTUM SUPERBOT PERFORMANCE REPORT - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("="*80)
     
     # Optimization tests
@@ -219,7 +219,7 @@ def display_report(report):
 
 
 async def main():
-    parser = argparse.ArgumentParser(description="Run performance tests for Quantum Bank")
+    parser = argparse.ArgumentParser(description="Run performance tests for Quantum Superbot")
     parser.add_argument("--save", action="store_true", help="Save the report to a file")
     parser.add_argument("--quick", action="store_true", help="Run a quick benchmark with fewer iterations")
     args = parser.parse_args()

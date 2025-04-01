@@ -1,8 +1,8 @@
-# Quantum Bank Discord Bot
+# Quantum Superbot
 
-Quantum Bank is a feature-rich Discord economy bot with advanced banking features, built using Pycord and MongoDB.
+Quantum Superbot is a powerful multi-purpose Discord bot featuring advanced command systems, performance optimization, and extensive functionality across various categories including utility, moderation, entertainment, and more.
 
-![Quantum Bank Banner](images/quantum_bank_banner.png)
+![Quantum Superbot Banner](images/quantum_superbot_banner.png)
 
 ## Features
 
@@ -55,8 +55,8 @@ Quantum Bank is a feature-rich Discord economy bot with advanced banking feature
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/quantum-bank-bot.git
-   cd quantum-bank-bot
+   git clone https://github.com/your-username/quantum-superbot.git
+   cd quantum-superbot
    ```
 
 2. Install uv if you don't have it yet:
@@ -83,7 +83,7 @@ Quantum Bank is a feature-rich Discord economy bot with advanced banking feature
    BOT_TOKEN=your_discord_bot_token
    MONGO_URI=your_mongodb_connection_string
    MAL_CLIENT_ID=your_myanimelist_client_id  # Optional, for anime commands
-   ACTIVITY_STATUS=Quantum Bank | /help  # Custom status
+   ACTIVITY_STATUS=Quantum Superbot | /help  # Custom status
    DEBUG=false  # Set to true for debug mode
    ```
 
@@ -146,12 +146,12 @@ After installation via `uv pip install -e "."`, you can also run:
 
 ```bash
 # Run the bot using the entry point
-quantum-bank
+quantum-superbot
 ```
 
 ## Advanced Configuration
 
-Quantum Bank supports advanced configuration options for scaling and performance. These can be accessed using specialized scripts:
+Quantum Superbot supports advanced configuration options for scaling and performance. These can be accessed using specialized scripts:
 
 ```bash
 # Run with high performance mode
@@ -234,22 +234,22 @@ For production use on a VPS, we recommend:
 - Setting up a systemd service for auto-restart
 - Using a monitoring solution like PM2
 
-Example systemd service file (`/etc/systemd/system/quantum-bank.service`):
+Example systemd service file (`/etc/systemd/system/quantum-superbot.service`):
 
 ```ini
 [Unit]
-Description=Quantum Bank Discord Bot
+Description=Quantum Superbot Discord Bot
 After=network.target
 
 [Service]
 User=quantum
-WorkingDirectory=/opt/quantum-bank
+WorkingDirectory=/opt/quantum-superbot
 ExecStart=/usr/bin/python3 -m launcher --performance medium
 Restart=always
 RestartSec=10
 StandardOutput=syslog
 StandardError=syslog
-SyslogIdentifier=quantum-bank
+SyslogIdentifier=quantum-superbot
 
 [Install]
 WantedBy=multi-user.target
@@ -258,17 +258,33 @@ WantedBy=multi-user.target
 Enable and start the service:
 
 ```bash
-sudo systemctl enable quantum-bank
-sudo systemctl start quantum-bank
+sudo systemctl enable quantum-superbot
+sudo systemctl start quantum-superbot
 ```
 
 ## Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## License
+## License and Usage
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+⚠️ **IMPORTANT: EDUCATIONAL USE ONLY** ⚠️
+
+This project is released under the Educational Use and Reference License (EURL). This means:
+
+✅ You MAY:
+- Study and analyze the code for learning
+- Reference the implementation techniques
+- Use small code snippets (max 10 lines) with attribution
+- Create educational content about the code
+
+❌ You MAY NOT:
+- Create or run your own instance of this bot
+- Distribute copies or derivative works
+- Use the code commercially
+- Remove or modify the license
+
+For full license terms, see the [LICENSE](LICENSE) file.
 
 ## Acknowledgments
 
@@ -323,7 +339,7 @@ This will verify:
 
 ## Performance Optimizations
 
-Quantum Bank includes advanced performance optimizations to ensure smooth operation even with large user bases:
+Quantum Superbot includes advanced performance optimizations to ensure smooth operation even with large user bases:
 
 ### Memory Management
 

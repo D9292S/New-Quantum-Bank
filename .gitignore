@@ -174,3 +174,9 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Documentation and internal notes
+project_overview.md
+commands_reference.txt
+docs/_build/
+site/

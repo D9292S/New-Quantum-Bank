@@ -1,12 +1,12 @@
 [project]
-name = "quantum-bank-bot"
+name = "quantum-superbot"
 version = "1.0.0"
-description = "A Discord economy bot with advanced banking features, MongoDB integration, and colorful logging"
+description = "A powerful multi-purpose Discord bot with advanced features, MongoDB integration, and performance optimization"
 readme = "README.md"
 requires-python = ">=3.12"
 license = {file = "LICENSE"}
 authors = [
-    {name = "Quantum Bank Team"}
+    {name = "Quantum Superbot Team"}
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -57,7 +57,7 @@ production = [
     "aiodns>=3.0.0,<4.0.0",
     "cchardet>=2.1.7,<3.0.0",
     'pycurl>=7.45.2,<8.0.0; platform_system != "Windows"',
-    "quantum-bank-bot[high-performance]",
+    "quantum-superbot[high-performance]",
 ]
 
 testing = [
@@ -82,7 +82,7 @@ docs = [
 ]
 
 dev = [
-    "quantum-bank-bot[testing,development,docs]",
+    "quantum-superbot[testing,development,docs]",
 ]
 
 [build-system]
@@ -186,4 +186,4 @@ skips = [
 ]
 
 [project.scripts]
-quantum-bank = "launcher:run_bot"
+quantum-superbot = "launcher:run_bot"

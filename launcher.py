@@ -254,7 +254,7 @@ def setup_logging(log_level: str = "normal") -> dict[str, dict[str, Any]]:
             # Messages to always show (high priority)
             self.important_patterns = [
                 "Bot is ready",
-                "Starting Quantum Bank",
+                "Starting Quantum Superbot",
                 "Logged in as",
                 "Connected to",
                 "Error",
@@ -515,17 +515,17 @@ def print_banner() -> None:
 {colors["YELLOW"]} ╚██████╔╝╚██████╔╝██║  ██║██║ ╚████║   ██║   ╚██████╔╝██║ ╚═╝ ██║{colors["RESET"]}
 {colors["YELLOW"]}  ╚══▀▀═╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝{colors["RESET"]}
 
-{colors["BOLD"]}{colors["GREEN"]}               ██████╗  █████╗ ███╗   ██╗██╗  ██╗{colors["RESET"]}
-{colors["BOLD"]}{colors["GREEN"]}               ██╔══██╗██╔══██╗████╗  ██║██║ ██╔╝{colors["RESET"]}
-{colors["BOLD"]}{colors["GREEN"]}               ██████╔╝███████║██╔██╗ ██║█████╔╝ {colors["RESET"]}
-{colors["BOLD"]}{colors["GREEN"]}               ██╔══██╗██╔══██║██║╚██╗██║██╔═██╗ {colors["RESET"]}
-{colors["BOLD"]}{colors["GREEN"]}               ██████╔╝██║  ██║██║ ╚████║██║  ██╗{colors["RESET"]}
-{colors["BOLD"]}{colors["GREEN"]}               ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝{colors["RESET"]}
+{colors["BOLD"]}{colors["GREEN"]}      ███████╗██╗   ██╗██████╗ ███████╗██████╗ ██████╗  ██████╗ ████████╗{colors["RESET"]}
+{colors["BOLD"]}{colors["GREEN"]}      ██╔════╝██║   ██║██╔══██╗██╔════╝██╔══██╗██╔══██╗██╔═══██╗╚══██╔══╝{colors["RESET"]}
+{colors["BOLD"]}{colors["GREEN"]}      ███████╗██║   ██║██████╔╝█████╗  ██████╔╝██████╔╝██║   ██║   ██║   {colors["RESET"]}
+{colors["BOLD"]}{colors["GREEN"]}      ╚════██║██║   ██║██╔═══╝ ██╔══╝  ██╔══██╗██╔══██╗██║   ██║   ██║   {colors["RESET"]}
+{colors["BOLD"]}{colors["GREEN"]}      ███████║╚██████╔╝██║     ███████╗██║  ██║██████╔╝╚██████╔╝   ██║   {colors["RESET"]}
+{colors["BOLD"]}{colors["GREEN"]}      ╚══════╝ ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝╚═════╝  ╚═════╝    ╚═╝   {colors["RESET"]}
     """
 
     print(banner)
     print(
-        f"{colors['BOLD']}⚡ {colors['BLUE']}Quantum Bank Bot{colors['RESET']} "
+        f"{colors['BOLD']}⚡ {colors['BLUE']}Quantum Superbot{colors['RESET']} "
         f"{colors['GREEN']}v{__version__}{colors['RESET']}"
     )
     print(
@@ -543,7 +543,7 @@ def print_banner() -> None:
 def parse_arguments() -> argparse.Namespace:
     """Parse command line arguments for advanced configuration"""
     parser = argparse.ArgumentParser(
-        description="Quantum Bank Discord Bot - A feature-rich Discord economy bot with advanced banking features",
+        description="Quantum Superbot Discord Bot - A feature-rich Discord economy bot with advanced banking features",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
@@ -617,7 +617,7 @@ def run_bot() -> int:
 
     # Handle --version flag
     if hasattr(args, "version") and args.version:
-        print(f"Quantum Bank Bot v{__version__}")
+        print(f"Quantum Superbot Bot v{__version__}")
         return 0
 
     # Set up proper event loop for Windows
@@ -838,7 +838,7 @@ def run_bot() -> int:
         # Run the bot - this creates its own event loop
         print(
             f"\n{ColoredFormatter.COLORS['BOLD']}{ColoredFormatter.COLORS['GREEN']}"
-            f"Starting Quantum Bank bot v{__version__}...{ColoredFormatter.COLORS['RESET']}"
+            f"Starting Quantum Superbot bot v{__version__}...{ColoredFormatter.COLORS['RESET']}"
         )
         print(
             f"{ColoredFormatter.COLORS['GRAY']}"
