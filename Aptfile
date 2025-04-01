@@ -1,0 +1,8 @@
+build-essential
+python3-dev
+libffi-dev
+curl
+libcurl4-openssl-dev
+libssl-dev
+mongodb-org-tools
+git 

@@ -1,17 +1,28 @@
 {
   "name": "Quantum Bank Discord Bot",
-  "description": "A feature-rich Discord economy bot with advanced banking features",
+  "description": "A feature-rich Discord economy bot with advanced banking features and performance optimizations",
   "repository": "https://github.com/D9292S/New-Quantum-Bank",
   "logo": "https://raw.githubusercontent.com/D9292S/New-Quantum-Bank/main/images/logo.png",
-  "keywords": ["discord", "bot", "python", "banking", "economy"],
+  "keywords": [
+    "discord",
+    "bot",
+    "economy",
+    "pycord",
+    "banking",
+    "python"
+  ],
   "env": {
     "BOT_TOKEN": {
       "description": "Your Discord Bot Token",
       "required": true
     },
     "MONGO_URI": {
-      "description": "MongoDB Connection URI",
+      "description": "MongoDB Connection String",
       "required": true
+    },
+    "MAL_CLIENT_ID": {
+      "description": "MyAnimeList Client ID (optional)",
+      "required": false
     },
     "ACTIVITY_STATUS": {
       "description": "Custom bot status message",
@@ -24,9 +35,24 @@
       "value": "false"
     },
     "PERFORMANCE_MODE": {
-      "description": "Performance mode (low/medium/high)",
+      "description": "Bot performance mode (low, medium, high)",
       "required": false,
-      "value": "medium"
+      "value": "high"
+    },
+    "MEMORY_LIMIT_MB": {
+      "description": "Memory limit for the bot in MB",
+      "required": false,
+      "value": "500"
+    },
+    "QUERY_CACHE_SIZE": {
+      "description": "Size of query cache",
+      "required": false,
+      "value": "2000"
+    },
+    "QUERY_CACHE_TTL": {
+      "description": "Time-to-live for cached queries in seconds",
+      "required": false,
+      "value": "600"
     }
   },
   "formation": {
@@ -37,8 +63,23 @@
   },
   "buildpacks": [
     {
-      "url": "heroku/python"
+      "url": "https://github.com/heroku/heroku-buildpack-python"
+    },
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-apt"
     }
   ],
-  "success_url": "/status"
+  "success_url": "/",
+  "stack": "heroku-22",
+  "environments": {
+    "test": {
+      "env": {
+        "DEBUG": "true",
+        "PERFORMANCE_MODE": "low"
+      },
+      "scripts": {
+        "test": "python -m pytest"
+      }
+    }
+  }
 } 

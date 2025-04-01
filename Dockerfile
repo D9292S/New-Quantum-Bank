@@ -8,20 +8,21 @@ WORKDIR /app
 # Copy only requirements first to leverage Docker cache
 COPY pyproject.toml .
 COPY .uv.toml .
+COPY uv.lock .
 COPY LICENSE .
 COPY README.md .
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv
-RUN pip install --no-cache-dir uv
+# Install uv directly using the official install script
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Install dependencies using uv
-RUN pip install uv && \
-    uv pip install ".[high-performance]" --system
+RUN uv pip install ".[high-performance]" --system
 
 #####################
 # FINAL STAGE

@@ -12,9 +12,9 @@ The Quantum Bank project uses:
 
 ## Python Version Requirements
 
-This project requires **Python 3.9 or higher**. Some dependencies (like motor-stubs) specifically require Python 3.9+, which is why we've set this as the minimum version.
+This project requires **Python 3.12 or higher**. The performance optimization modules and certain dependencies specifically require Python 3.12+, which is why we've set this as the minimum version.
 
-If you encounter version compatibility issues, make sure you're using Python 3.9 or newer.
+If you encounter version compatibility issues, make sure you're using Python 3.12 or newer.
 
 ## Important Note on Discord Library
 
@@ -25,6 +25,33 @@ This project uses **py-cord** as its Discord API library but continues to use `i
 3. This allows the code to work with either discord.py or py-cord
 
 If you encounter any compatibility issues, please ensure you are using the correct version of py-cord (2.x+).
+
+## Performance Optimization Dependencies
+
+The project's performance optimization modules require several specific packages:
+
+- **psutil**: Used for memory monitoring and management
+- **expiringdict**: Used for implementing TTL-based caching
+- **matplotlib**: Used for generating performance graphs
+- **msgpack**: Used for efficient data serialization
+
+These dependencies are included in the `dependencies` section of pyproject.toml and are automatically installed when you install the project.
+
+For Heroku deployment, additional optimization packages are included in the `production` dependencies group:
+
+```toml
+production = [
+    "psutil>=5.9.5,<6.0.0",
+    "memory-profiler>=0.61.0,<1.0.0",
+    "aiomonitor>=0.4.5,<1.0.0",
+    "colorlog>=6.7.0,<7.0.0",
+    'uvloop>=0.17.0,<0.21.0; platform_system != "Windows"',
+    "aiodns>=3.0.0,<4.0.0",
+    "cchardet>=2.1.7,<3.0.0",
+    'pycurl>=7.45.2,<8.0.0; platform_system != "Windows"',
+    "quantum-bank-bot[high-performance]",
+]
+```
 
 ## Note on Type Stubs
 
@@ -63,17 +90,16 @@ When you need to add or update a dependency:
    uv pip compile pyproject.toml --upgrade --output-file requirements.txt
    ```
 
-3. **Update your environment**:
+3. **Update your environment using uv**:
    ```bash
-   # Either using uv (recommended)
+   # Either using uv standard dependencies
    uv pip install -e .
 
    # Or for development dependencies
    uv pip install -e ".[development]"
 
-   # Or using pip
-   pip install -e .
-   pip install -e ".[development]"
+   # Or for production dependencies
+   uv pip install -e ".[production]"
    ```
 
 ## Common Issues
@@ -83,8 +109,8 @@ When you need to add or update a dependency:
 If you manually edit pyproject.toml and see dependency conflicts:
 
 ```bash
-# Regenerate requirements.txt
-uv pip compile pyproject.toml --upgrade --output-file requirements.txt
+# Regenerate the lock file
+uv pip compile --dependencies=all
 
 # Then reinstall the project
 uv pip install -e .
@@ -103,7 +129,7 @@ Some packages don't have type stubs available in PyPI. For these packages:
 
 2. Or install the specific stubs directly:
    ```bash
-   pip install types-package-name
+   uv pip install types-package-name
    ```
 
 ## Development Workflow
@@ -112,13 +138,13 @@ For development, we recommend:
 
 1. Create a virtual environment:
    ```bash
-   python -m venv .venv
+   uv venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
 2. Install development dependencies:
    ```bash
-   pip install -e ".[development,testing]"
+   uv pip install -e ".[development,testing]"
    ```
 
 3. Install pre-commit hooks:
@@ -127,3 +153,13 @@ For development, we recommend:
    ```
 
 This ensures you have all the tools needed for development, testing, and code quality.
+
+## Performance Considerations
+
+When adding new dependencies, consider their impact on performance:
+
+1. **Evaluate alternatives**: Consider if there are more lightweight alternatives available
+2. **Check compatibility**: Ensure the package works correctly with Python 3.12+
+3. **Test performance impact**: Use the performance testing tools in the `tools/` directory to benchmark before and after adding dependencies
+
+For critical path operations, prefer standard library solutions when possible to reduce dependency overhead.

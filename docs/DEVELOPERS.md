@@ -6,7 +6,7 @@ This guide provides comprehensive information for developers who want to contrib
 
 ### Prerequisites
 
-- Python 3.9 or higher
+- Python 3.12 or higher
 - MongoDB (locally installed or remote)
 - Git
 - A Discord Bot Token (for testing)
@@ -45,6 +45,7 @@ This guide provides comprehensive information for developers who want to contrib
    BOT_TOKEN=your_discord_bot_token
    MONGO_URI=mongodb://localhost:27017/quantum_bank_dev
    DEBUG=true
+   PERFORMANCE_MODE=medium  # Options: low, medium, high
    ```
 
 4. **Run the bot in development mode:**
@@ -58,10 +59,17 @@ This guide provides comprehensive information for developers who want to contrib
 quantum-bank/
 ├── bot.py                 # Main bot file
 ├── launcher.py            # Entry point
-├── requirements.txt       # Dependencies
 ├── pyproject.toml         # Project metadata and build configuration
 ├── .env.example           # Example environment variables
 ├── .github/               # GitHub workflows and configs
+├── optimizations/         # Performance optimization modules
+│   ├── __init__.py
+│   ├── memory_management.py  # Memory optimization and monitoring
+│   ├── db_performance.py     # Database query caching and optimization
+│   └── mongodb_improvements.py  # MongoDB-specific improvements
+├── tools/                 # Development and diagnostic tools
+│   ├── check_optimizations.py  # Script to verify optimizations
+│   └── run_performance_tests.py  # Performance benchmark tool
 ├── cogs/                  # Bot commands organized by category
 │   ├── __init__.py
 │   ├── accounts.py        # Account management commands
@@ -80,6 +88,77 @@ quantum-bank/
 │   ├── test_accounts.py
 │   └── test_mongo.py
 └── logs/                  # Log files
+```
+
+## Performance Optimization
+
+The bot includes several performance optimization modules:
+
+### Memory Management
+
+Located in `optimizations/memory_management.py`, this module provides:
+
+- Memory usage tracking and monitoring
+- Automated garbage collection based on threshold
+- Memory leak detection using weak references
+- Resource limiting for memory-intensive operations
+
+Usage example:
+```python
+from optimizations.memory_management import get_memory_manager
+
+# Get the global memory manager instance
+memory_manager = get_memory_manager()
+
+# Check current memory usage
+memory_mb = memory_manager.get_memory_usage()
+print(f"Current memory usage: {memory_mb}MB")
+
+# Force garbage collection if needed
+memory_manager.force_collection()
+```
+
+### Query Caching
+
+Located in `optimizations/db_performance.py`, this module provides:
+
+- Caching for frequently-accessed database queries
+- Query profiling to identify slow queries
+- Retry mechanisms for transient database errors
+- Batch processing for write operations
+
+Usage example:
+```python
+from optimizations.db_performance import get_query_cache, cacheable_query
+
+# Get the global query cache
+cache = get_query_cache()
+
+# Use the cache directly
+cache.set("key", "value", ttl=300)  # Cache for 5 minutes
+result = cache.get("key")
+
+# Or use the decorator for async functions
+@cacheable_query(ttl=300)
+async def get_user_data(user_id):
+    # Expensive database query here
+    return await db.users.find_one({"user_id": user_id})
+```
+
+### Performance Testing
+
+The `tools/` directory contains scripts for testing and benchmarking performance:
+
+- `check_optimizations.py` - Verifies that optimizations are working correctly
+- `run_performance_tests.py` - Runs benchmarks and generates performance reports
+
+Run these tools to ensure optimizations are functioning as expected:
+```bash
+# Check if optimizations are working
+python tools/check_optimizations.py
+
+# Run performance benchmarks
+python tools/run_performance_tests.py --quick
 ```
 
 ## Testing

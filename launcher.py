@@ -15,6 +15,14 @@ from dotenv import load_dotenv
 import bot
 from config import BotConfig, ConfigurationError
 
+# Import our new performance optimization modules
+try:
+    from optimizations.memory_management import get_memory_manager, optimize_memory_usage
+    from optimizations.db_performance import get_query_cache, QueryProfiler
+    OPTIMIZATIONS_AVAILABLE = True
+except ImportError:
+    OPTIMIZATIONS_AVAILABLE = False
+    print("Performance optimization modules not available, running without optimizations")
 
 # Define color codes for log levels
 class ColoredFormatter(logging.Formatter):
@@ -626,6 +634,34 @@ def run_bot() -> int:
     global LOG_CATEGORIES
     LOG_CATEGORIES = setup_logging(args.log_level)
 
+    # Initialize performance optimizations if available
+    if OPTIMIZATIONS_AVAILABLE:
+        # Configure memory manager based on performance mode
+        memory_limit_mb = 400  # Default medium setting
+        
+        if args.performance == "high":
+            memory_limit_mb = 600  # Allow more memory for high performance
+        elif args.performance == "low":
+            memory_limit_mb = 200  # Restrict memory for low performance mode
+        
+        # Initialize memory manager
+        memory_manager = get_memory_manager()
+        memory_manager.memory_limit_mb = memory_limit_mb
+        
+        # Configure query cache size based on performance mode
+        query_cache = get_query_cache()
+        if args.performance == "high":
+            query_cache.max_size = 2000
+            query_cache.max_age = 600  # 10 minutes
+        elif args.performance == "low":
+            query_cache.max_size = 500
+            query_cache.max_age = 120  # 2 minutes
+        
+        # Log optimization status
+        logger = logging.getLogger("performance")
+        logger.info(f"Performance optimizations initialized with {args.performance} profile")
+        logger.info(f"Memory limit: {memory_limit_mb}MB, Query cache size: {query_cache.max_size}")
+
     # Use the new BotConfig class instead of the namedtuple
     try:
         # Create and validate config using both env vars and command-line args
@@ -701,6 +737,13 @@ def run_bot() -> int:
                 f"using standard json module{ColoredFormatter.COLORS['RESET']}"
             )
 
+        # Apply memory optimizations for high-performance mode
+        if OPTIMIZATIONS_AVAILABLE:
+            # Run initial memory optimization
+            optimize_memory_usage(threshold_mb=memory_limit_mb)
+            # Reset query profiler stats to start fresh
+            QueryProfiler.reset_stats()
+
     elif config.performance_mode == "low":
         print(
             f"{ColoredFormatter.COLORS['BLUE']}Using "
@@ -709,6 +752,9 @@ def run_bot() -> int:
             f"minimizing resource usage{ColoredFormatter.COLORS['RESET']}"
         )
         # Configure for minimal resource usage
+        if OPTIMIZATIONS_AVAILABLE:
+            # More aggressive memory management in low-resource mode
+            optimize_memory_usage(threshold_mb=150)  # Lower threshold
     else:
         print(
             f"{ColoredFormatter.COLORS['BLUE']}Using "
@@ -768,6 +814,11 @@ def run_bot() -> int:
             shard_count=config.shard_count,
             shard_ids=config.shard_ids,
         )
+
+        # Store optimization references if available
+        if OPTIMIZATIONS_AVAILABLE:
+            bot_instance._memory_manager = get_memory_manager()
+            bot_instance._query_cache = get_query_cache()
 
         # Make sure appropriate cogs are loaded
         # Define initial cogs order based on dependencies

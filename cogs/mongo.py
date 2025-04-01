@@ -32,7 +32,42 @@ from helpers.exceptions import (
     LoanLimitError,
     ValidationError,
 )
-from optimizations.mongodb_improvements import optimize_query, smart_cache
+
+# Import our new optimizations
+try:
+    from optimizations.db_performance import (
+        query_timing,
+        db_retry,
+        cacheable_query,
+        get_query_cache,
+        QueryProfiler,
+        get_index_recommender,
+        BatchProcessor,
+    )
+    from optimizations.mongodb_improvements import optimize_query, smart_cache, execute_bulk_write, BulkOperations
+    OPTIMIZATIONS_AVAILABLE = True
+except ImportError:
+    # Fallback if optimizations aren't available
+    OPTIMIZATIONS_AVAILABLE = False
+    
+    # Define dummy decorators for compatibility
+    def query_timing(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator if not callable(args[0]) else decorator(args[0])
+        
+    def db_retry(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator if not callable(args[0]) else decorator(args[0])
+        
+    def cacheable_query(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator if not callable(args[0]) else decorator(args[0])
+    
+    # Dummy functions
+    optimize_query = lambda query: query
 
 
 class PerformanceMonitor:
@@ -179,6 +214,21 @@ class Database(commands.Cog):
         self.max_retries = 5  # Increased from 3
         self.retry_delay = 5  # seconds
         self.mongo_uri = self.bot.config.mongo_uri
+        
+        # Initialize performance tracking
+        self.performance_monitor = PerformanceMonitor()
+        
+        # Initialize optimizations if available
+        if OPTIMIZATIONS_AVAILABLE:
+            self.query_profiler = QueryProfiler
+            self.index_recommender = get_index_recommender()
+            
+            # Create batch processor for transaction logging
+            self.transaction_batch = BatchProcessor(
+                batch_size=50,
+                max_delay=2.0,
+                processor_func=self._process_transaction_batch
+            )
 
         if not self.mongo_uri:
             self.logger.error("MONGO_URI is not set in config")
@@ -198,130 +248,394 @@ class Database(commands.Cog):
         try:
             self.client = AsyncIOMotorClient(
                 self.mongo_uri,
-                maxPoolSize=10,
-                minPoolSize=2,
-                serverSelectionTimeoutMS=5000,
-                connectTimeoutMS=5000,
-                socketTimeoutMS=20000,
-                retryWrites=True,
-                retryReads=True,
-                w="majority",
+                serverSelectionTimeoutMS=5000,  # 5 seconds timeout
+                connectTimeoutMS=10000,  # 10 seconds connect timeout
+                socketTimeoutMS=30000,  # 30 seconds socket timeout
+                maxPoolSize=100,  # Increase pool size for better concurrency
+                minPoolSize=10,  # Keep minimum connections open
+                maxIdleTimeMS=45000,  # Close idle connections after 45 seconds
+                waitQueueTimeoutMS=1000,  # Wait 1 second for a connection from pool
             )
-
-            # Initialize the db attribute with the fixed database name
-            self.db = self.client.get_database(db_name)
-
-            self.logger.info("MongoDB client initialized - connection will be tested in cog_load")
+            
+            # Set database reference in __init__ but don't check connectivity yet
+            self.db = self.client[db_name]  # Set db reference but don't access it yet
+            
+            # Register index recommendations if available
+            if OPTIMIZATIONS_AVAILABLE and hasattr(self, 'index_recommender'):
+                # Register known indexes for accounts collection
+                self.index_recommender.register_index("accounts", ["user_id"])
+                self.index_recommender.register_index("accounts", ["guild_id"])
+                self.index_recommender.register_index("accounts", ["balance"])
+                
+                # Register known indexes for transactions collection
+                self.index_recommender.register_index("transactions", ["user_id"])
+                self.index_recommender.register_index("transactions", ["timestamp"])
+                self.index_recommender.register_index("transactions", ["transaction_type"])
+                
         except Exception as e:
-            self.logger.error(f"Failed to initialize MongoDB client: {str(e)}")
-            self.client = None
-            self.db = None
+            self.logger.error(f"Failed to initialize MongoDB client: {e}")
 
-        self.performance_monitor = PerformanceMonitor()
-        # Connection will be fully established in cog_load
-        # Start the performance check
-        self._start_performance_check()
+    # New method: Batch processor for transactions
+    async def _process_transaction_batch(self, transactions):
+        """Process a batch of transactions"""
+        if not self.db or not self.connected:
+            self.logger.error("Cannot process transaction batch - no database connection")
+            return
 
-    def _start_performance_check(self):
-        """Start periodic performance monitoring tasks"""
-
-        # Create task for periodic performance monitoring
-        self.bot.loop.create_task(self._run_performance_monitoring())
-        self.logger.info("Database performance monitoring started")
-
-    async def _run_performance_monitoring(self):
-        """Run performance monitoring at regular intervals"""
         try:
-            # Wait for bot to be fully ready
-            await self.bot.wait_until_ready()
-
-            # Run the monitoring loop
-            while not self.bot.is_closed():
-                try:
-                    if self.db is not None and self.connected:
-                        await self._periodic_performance_check()
-                    else:
-                        self.logger.warning("Skipping performance check: not connected to database")
-                except Exception as e:
-                    self.logger.error(f"Error during periodic performance check: {str(e)}")
-
-                # Wait for next check interval
-                await asyncio.sleep(300)  # Check every 5 minutes
+            # Use the bulk operation helper
+            start_time = time.time()
+            result = await self.db.transactions.insert_many(transactions)
+            duration = time.time() - start_time
+            
+            # Record metrics
+            if OPTIMIZATIONS_AVAILABLE:
+                self.query_profiler.record_query(
+                    collection="transactions",
+                    operation="insert_many",
+                    query={"count": len(transactions)},
+                    duration=duration,
+                    success=True,
+                    result_size=len(transactions)
+                )
+                
+            self.logger.info(f"Processed batch of {len(transactions)} transactions in {duration:.3f}s")
+            return result
         except Exception as e:
-            self.logger.error(f"Performance monitoring task stopped: {str(e)}")
+            self.logger.error(f"Error processing transaction batch: {e}")
+            # For critical failures, attempt one-by-one insert
+            successful = 0
+            for transaction in transactions:
+                try:
+                    await self.db.transactions.insert_one(transaction)
+                    successful += 1
+                except Exception:
+                    pass
+            self.logger.warning(f"Fallback processing: {successful}/{len(transactions)} transactions saved")
 
     @commands.slash_command(description="View database performance metrics")
     @commands.has_permissions(administrator=True)
     async def performance_metrics(self, ctx):
-        """View database performance metrics"""
-        try:
-            metrics = self.performance_monitor.operation_times
-            if not metrics:
-                await ctx.respond("No performance metrics available yet.")
-                return
+        """View database performance metrics and index recommendations"""
+        if not self.connected:
+            await ctx.respond("❌ Database is not connected", ephemeral=True)
+            return
 
-            embed = discord.Embed(
-                title="Database Performance Metrics",
-                description="Average execution times for database operations",
-                color=discord.Color.blue(),
+        # Create embed for performance metrics
+        embed = discord.Embed(title="Database Performance Metrics", color=discord.Color.blue())
+        
+        # Add basic performance data
+        ping_time = await self._measure_ping_time()
+        embed.add_field(name="Database Ping", value=f"{ping_time:.2f}ms", inline=True)
+        
+        # Add operation performance data from our class
+        for operation, times in self.performance_monitor.operation_times.items():
+            if times:
+                avg = sum(times) / len(times)
+                embed.add_field(name=f"{operation}", value=f"{avg:.2f}ms avg ({len(times)} calls)", inline=True)
+
+        # If optimizations are available, add more detailed metrics
+        if OPTIMIZATIONS_AVAILABLE:
+            stats = self.query_profiler.get_stats()
+            if stats["total_queries"] > 0:
+                embed.add_field(
+                    name="Total Queries", 
+                    value=f"{stats['total_queries']} (Avg: {stats['avg_query_time']:.3f}s)", 
+                    inline=False
+                )
+                
+                # Add cache statistics
+                cache_stats = stats.get("cache", {})
+                if cache_stats:
+                    cache_hit_ratio = cache_stats.get("hit_ratio", 0) * 100
+                    embed.add_field(
+                        name="Cache Statistics", 
+                        value=f"Size: {cache_stats.get('size', 0)}/{cache_stats.get('max_size', 0)}\n" 
+                              f"Hit Ratio: {cache_hit_ratio:.1f}%",
+                        inline=True
+                    )
+                
+                # Add slow query information
+                if stats["slow_queries"] > 0:
+                    slowest = stats["slowest_query"]
+                    embed.add_field(
+                        name="Slow Queries", 
+                        value=f"{stats['slow_queries']} detected\nSlowest: {slowest['time']:.3f}s",
+                        inline=True
+                    )
+            
+            # Add index recommendations
+            recommendations = self.index_recommender.get_recommendations()
+            if recommendations:
+                rec_text = ""
+                for collection, indexes in recommendations.items():
+                    if indexes:
+                        fields = ", ".join(indexes[0]["fields"])
+                        count = indexes[0]["count"]
+                        rec_text += f"{collection}: {fields} ({count} queries)\n"
+                
+                if rec_text:
+                    embed.add_field(name="Index Recommendations", value=rec_text, inline=False)
+
+        # Send the embed
+        await ctx.respond(embed=embed)
+
+    @measure_performance
+    @db_retry(max_attempts=5, retry_delay=1.0)
+    async def _execute_with_retry(self, operation_name, operation_func, max_retries=3):
+        """Execute a database operation with retry logic"""
+        retries = 0
+        last_error = None
+        
+        while retries <= max_retries:
+            try:
+                # Apply query optimization if this is a find operation
+                if operation_name.startswith("find") and len(operation_func.args) > 0:
+                    # Get the query argument (usually first arg)
+                    query_arg = operation_func.args[0]
+                    if isinstance(query_arg, dict):
+                        # Optimize the query
+                        optimized_query = optimize_query(query_arg)
+                        # Replace the original query with optimized version
+                        operation_func.args = (optimized_query,) + operation_func.args[1:]
+                
+                # Execute the operation
+                result = await operation_func()
+                return result
+            except (ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout) as e:
+                retries += 1
+                last_error = e
+                
+                if retries <= max_retries:
+                    # Exponential backoff
+                    delay = 0.5 * (2 ** retries)
+                    self.logger.warning(
+                        f"Database operation '{operation_name}' failed, retrying in {delay:.1f}s: {str(e)}"
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    self.logger.error(f"Database operation '{operation_name}' failed after {retries} retries: {str(e)}")
+            except Exception as e:
+                # For other exceptions, don't retry
+                self.logger.error(f"Database operation '{operation_name}' error: {str(e)}")
+                raise
+                
+        # If we get here, all retries failed
+        raise last_error or DatabaseError(f"Operation {operation_name} failed after {max_retries} attempts")
+
+    @measure_performance("log_transaction")
+    @query_timing(collection="transactions", operation="insert")
+    async def log_transaction(
+        self,
+        user_id: str,
+        transaction_type: str,
+        amount: int | float,
+        description: str = None,
+        receiver_id: str = None,
+        balance_before: float = None,
+        balance_after: float = None,
+    ) -> str | None:
+        """
+        Log a transaction in the transactions collection.
+
+        Args:
+            user_id: The ID of the user making the transaction
+            transaction_type: The type of transaction (deposit, withdraw, transfer, etc.)
+            amount: The amount of the transaction
+            description: Optional description of the transaction
+            receiver_id: Optional ID of the user receiving the transaction (for transfers)
+            balance_before: Optional balance before the transaction
+            balance_after: Optional balance after the transaction
+
+        Returns:
+            The ID of the inserted transaction, or None if the insertion failed
+        """
+        if not self.db or not self.connected:
+            self.logger.error("Cannot log transaction - no database connection")
+            return None
+
+        # Validate inputs
+        if not self._validate_id(user_id):
+            self.logger.error(f"Invalid user_id for transaction log: {user_id}")
+            return None
+
+        if receiver_id and not self._validate_id(receiver_id):
+            self.logger.error(f"Invalid receiver_id for transaction log: {receiver_id}")
+            return None
+
+        transaction = {
+            "user_id": user_id,
+            "transaction_type": transaction_type,
+            "amount": amount,
+            "timestamp": datetime.utcnow(),
+        }
+
+        if description:
+            transaction["description"] = self._sanitize_input(description)[:100]  # Limit description length
+
+        if receiver_id:
+            transaction["receiver_id"] = receiver_id
+
+        if balance_before is not None:
+            transaction["balance_before"] = balance_before
+
+        if balance_after is not None:
+            transaction["balance_after"] = balance_after
+
+        # Use batch processing if available
+        if OPTIMIZATIONS_AVAILABLE and hasattr(self, 'transaction_batch'):
+            try:
+                # Add to batch processor
+                await self.transaction_batch.add(transaction)
+                # We don't have the transaction ID immediately when using batch processing
+                # but we return a placeholder that indicates success
+                return "batch_processing"
+            except Exception as e:
+                self.logger.error(f"Error adding transaction to batch: {e}")
+                # Fall back to direct insert on error
+        
+        # Direct insert if not using batch processing or batch failed
+        try:
+            result = await self.db.transactions.insert_one(transaction)
+            return str(result.inserted_id)
+        except Exception as e:
+            self.logger.error(f"Failed to log transaction: {e}")
+            return None
+
+    @measure_performance
+    @query_timing(collection="accounts", operation="find")
+    @cacheable_query(ttl=300)  # Cache for 5 minutes
+    async def get_account(self, user_id, guild_id):
+        """Get a user's account"""
+        if not self.db or not self.connected:
+            self.logger.error("Cannot get account - no database connection")
+            return None
+
+        if not self._validate_id(user_id) or not self._validate_id(guild_id):
+            return None
+
+        try:
+            # Apply query optimization
+            query = optimize_query({"user_id": user_id, "guild_id": guild_id})
+            
+            account = await self.db.accounts.find_one(query)
+            return account
+        except Exception as e:
+            self.logger.error(f"Failed to get account: {e}")
+            return None
+
+    @measure_performance
+    @query_timing(collection="accounts", operation="update")
+    async def update_balance(self, user_id, guild_id, amount, transaction_type, reason=None):
+        """Update a user's balance with optimized queries and error handling"""
+        if not self.db or not self.connected:
+            self.logger.error("Cannot update balance - no database connection")
+            raise DatabaseError("Database not connected")
+
+        if not self._validate_id(user_id) or not self._validate_id(guild_id):
+            raise ValidationError("Invalid user_id or guild_id")
+
+        try:
+            # Get the current account
+            account = await self.get_account(user_id, guild_id)
+            if not account:
+                raise AccountNotFoundError(f"Account for user {user_id} not found")
+
+            # Calculate new balance
+            current_balance = account.get("balance", 0)
+            new_balance = current_balance + amount
+
+            # Check for negative balance
+            if new_balance < 0 and transaction_type not in ["loan", "admin_adjust"]:
+                raise InsufficientFundsError(f"Insufficient funds. Current balance: {current_balance}")
+
+            # Update the account
+            result = await self.db.accounts.update_one(
+                {"user_id": user_id, "guild_id": guild_id},
+                {"$set": {"balance": new_balance, "last_transaction": datetime.utcnow()}},
             )
 
-            for operation, times in metrics.items():
-                if times:  # Only show operations that have been recorded
-                    avg_time = sum(times) / len(times)
-                    count = len(times)
-                    embed.add_field(
-                        name=operation,
-                        value=f"Average: {avg_time:.3f}s\nCount: {count}",
-                        inline=False,
-                    )
+            if result.modified_count == 0:
+                raise DatabaseError("Failed to update balance, no document modified")
 
-            await ctx.respond(embed=embed, ephemeral=True)
+            # Log the transaction
+            await self.log_transaction(
+                user_id=user_id,
+                transaction_type=transaction_type,
+                amount=amount,
+                description=reason,
+                balance_before=current_balance,
+                balance_after=new_balance,
+            )
+
+            # Invalidate cache for this account to ensure fresh data
+            if OPTIMIZATIONS_AVAILABLE:
+                cache = get_query_cache()
+                # Construct a key pattern similar to what cacheable_query would use
+                cache_key_pattern = f"get_account:{user_id}:{guild_id}"
+                for key in list(cache.cache.keys()):
+                    if cache_key_pattern in key:
+                        del cache.cache[key]
+
+            # Return account info with updated balance
+            return {"user_id": user_id, "guild_id": guild_id, "balance": new_balance, "previous_balance": current_balance}
+
+        except (AccountNotFoundError, InsufficientFundsError) as e:
+            # Re-raise known exceptions
+            raise
         except Exception as e:
-            self.logger.error({"event": "Failed to get performance metrics", "error": str(e), "level": "error"})
-            await ctx.respond("Failed to get performance metrics.", ephemeral=True)
+            self.logger.error(f"Failed to update balance: {e}")
+            raise DatabaseError(f"Database error: {str(e)}")
 
-    async def cog_load(self):
-        """Called when the cog is loaded"""
-        self.logger.info("Loading Database cog")
+    # Add new method to get database performance stats
+    async def get_db_performance_stats(self):
+        """Get comprehensive database performance statistics"""
+        if not OPTIMIZATIONS_AVAILABLE:
+            return {
+                "optimizations_enabled": False,
+                "basic_metrics": {op: self.performance_monitor.get_average_time(op) for op in self.performance_monitor.operation_times}
+            }
+            
+        # Get query stats from profiler
+        query_stats = self.query_profiler.get_stats()
+        
+        # Get cache stats
+        cache_stats = get_query_cache().stats()
+        
+        # Get index recommendations
+        index_recommendations = self.index_recommender.get_recommendations(min_occurrences=5)
+        
+        # Get batch processor stats if available
+        batch_stats = {}
+        if hasattr(self, 'transaction_batch'):
+            batch_stats = self.transaction_batch.stats()
+            
+        # Build comprehensive stats
+        return {
+            "optimizations_enabled": True,
+            "query_stats": query_stats,
+            "cache_stats": cache_stats,
+            "batch_stats": batch_stats,
+            "index_recommendations": index_recommendations,
+            "connection_retries": self.connection_retries,
+            "ping_time_ms": await self._measure_ping_time(),
+        }
 
-        # Try to force a connection using a more direct approach
-        await self._force_connection()
+    # Override cog_unload to clean up resources
+    async def cog_unload(self):
+        """Clean up resources when the cog is unloaded"""
+        # Close MongoDB connection
+        if self.client:
+            self.client.close()
+            self.logger.info("MongoDB connection closed")
+            
+        # Flush any pending transaction batches
+        if OPTIMIZATIONS_AVAILABLE and hasattr(self, 'transaction_batch'):
+            await self.transaction_batch.flush()
+            self.logger.info("Transaction batch flushed")
 
-        # If we didn't succeed with the force method, try the normal way
-        if not self.connected:
-            self.logger.info("Forced connection failed, trying standard connection...")
-            # Try to connect to the database (if we have a client)
-            if self.client is not None:
-                self.logger.info("Database client exists, attempting connection test...")
-                try:
-                    # Test the connection
-                    connection_result = await self._test_connection()
-                    self.logger.info(f"Connection test result: {connection_result}")
-
-                    # If connection test passes, set up collections
-                    if self.connected:
-                        self.logger.info("Connection successful, setting up collections...")
-                        await self._ensure_collections_exist()
-                        # Set up TTL index for expired transactions
-                        await self._setup_ttl_index()
-                        # Start the daily tasks
-                        self._start_daily_tasks()
-                        self.logger.info("Database cog fully loaded and connected")
-                    else:
-                        self.logger.warning("Database cog loaded but not connected to MongoDB")
-                except Exception as e:
-                    self.logger.error(f"Failed to complete Database cog initialization: {str(e)}", exc_info=True)
-            else:
-                self.logger.warning("Database cog loaded without MongoDB client initialization")
-        else:
-            self.logger.info("Forced connection successful, setting up collections...")
-            await self._ensure_collections_exist()
-            # Set up TTL index for expired transactions
-            await self._setup_ttl_index()
-            # Start the daily tasks
-            self._start_daily_tasks()
-            self.logger.info("Database cog fully loaded and connected with forced method")
+        # Base implementation
+        self.logger.info("Database cog unloaded")
 
     async def _force_connection(self):
         """Try a more direct approach to connect to MongoDB"""
@@ -586,931 +900,6 @@ class Database(commands.Cog):
             if "connection" in str(e).lower():
                 self.logger.warning("Connection may have been lost during performance check, marking as disconnected")
                 self.connected = False
-
-    @measure_performance
-    async def _execute_with_retry(self, operation_name, operation_func, max_retries=3):
-        """Execute a database operation with automatic retries for transient errors"""
-        if self.db is None:
-            self.logger.error(f"Cannot execute {operation_name}: database not initialized")
-            return None
-
-        retry_count = 0
-        last_error = None
-        start_time = time.perf_counter()
-
-        while retry_count <= max_retries:
-            try:
-                # Execute the operation
-                result = await operation_func()
-
-                # Log success (with timing)
-                execution_time = (time.perf_counter() - start_time) * 1000  # Convert to ms
-
-                if execution_time > 500:  # Log slow operations
-                    self.logger.warning(f"{operation_name} completed in {execution_time:.2f}ms (slow)")
-                elif retry_count > 0:  # Log retry successes
-                    self.logger.info(
-                        f"{operation_name} succeeded after {retry_count} retries (took {execution_time:.2f}ms)"
-                    )
-
-                return result
-            except (ConnectionFailure, NetworkTimeout, ServerSelectionTimeoutError) as e:
-                retry_count += 1
-                last_error = e
-
-                if retry_count <= max_retries:
-                    # Exponential backoff
-                    wait_time = 0.5 * (2**retry_count)  # 1, 2, 4 seconds...
-                    self.logger.warning(
-                        f"{operation_name} failed with error: {str(e)}. Retrying in {wait_time:.1f}s ({retry_count}/{max_retries})"
-                    )
-                    await asyncio.sleep(wait_time)
-                else:
-                    self.logger.error(f"{operation_name} failed after {max_retries} retries: {str(e)}")
-            except Exception as e:
-                # Non-retriable error
-                self.logger.error(f"{operation_name} failed with non-retriable error: {str(e)}")
-                last_error = e
-                break
-
-        # If we get here, all retries failed
-        self.logger.error(f"{operation_name} operation failed: {str(last_error)}")
-        return None
-
-    async def _setup_collections(self):
-        """Setup collections with proper validation"""
-        try:
-            # For MongoDB Atlas with limited user permissions, simply check collections
-            # rather than trying to modify them
-            if "mongodb+srv" in self.mongo_uri:
-                self.logger.info("Using MongoDB Atlas - skipping collection validation setup")
-                return True
-
-            # Continue with normal setup for non-Atlas connections
-            # Setup accounts collection
-            await self.db.command(
-                {
-                    "collMod": "accounts",
-                    "validator": {
-                        "$jsonSchema": {
-                            "bsonType": "object",
-                            "required": [
-                                "user_id",
-                                "guild_id",
-                                "username",
-                                "branch_name",
-                                "balance",
-                                "created_at",
-                            ],
-                            "properties": {
-                                "user_id": {"bsonType": "string"},
-                                "guild_id": {"bsonType": "string"},
-                                "username": {"bsonType": "string"},
-                                "branch_name": {"bsonType": "string"},
-                                "balance": {"bsonType": "number"},
-                                "created_at": {"bsonType": "date"},
-                                "upi_id": {"bsonType": "string"},
-                                "interest_rate": {
-                                    "bsonType": "number",
-                                    "minimum": 0,
-                                    "maximum": 100,
-                                },
-                                "last_interest_calculation": {"bsonType": "date"},
-                                "account_type": {
-                                    "bsonType": "string",
-                                    "enum": ["savings", "checking", "fixed_deposit"],
-                                },
-                                "credit_score": {
-                                    "bsonType": "number",
-                                    "minimum": 300,
-                                    "maximum": 850,
-                                },
-                                "credit_history": {
-                                    "bsonType": "array",
-                                    "items": {
-                                        "bsonType": "object",
-                                        "properties": {
-                                            "date": {"bsonType": "date"},
-                                            "action": {"bsonType": "string"},
-                                            "change": {"bsonType": "number"},
-                                            "reason": {"bsonType": "string"},
-                                        },
-                                    },
-                                },
-                                "fixed_deposit": {
-                                    "bsonType": "object",
-                                    "properties": {
-                                        "amount": {"bsonType": "number"},
-                                        "term_months": {"bsonType": "int"},
-                                        "maturity_date": {"bsonType": "date"},
-                                        "interest_rate": {"bsonType": "number"},
-                                    },
-                                },
-                                "loan": {
-                                    "bsonType": "object",
-                                    "properties": {
-                                        "amount": {"bsonType": "number"},
-                                        "interest_rate": {"bsonType": "number"},
-                                        "term_months": {"bsonType": "int"},
-                                        "monthly_payment": {"bsonType": "number"},
-                                        "remaining_amount": {"bsonType": "number"},
-                                        "next_payment_date": {"bsonType": "date"},
-                                        "start_date": {"bsonType": "date"},
-                                        "end_date": {"bsonType": "date"},
-                                        "status": {
-                                            "bsonType": "string",
-                                            "enum": ["active", "paid", "defaulted"],
-                                        },
-                                    },
-                                },
-                            },
-                        }
-                    },
-                }
-            )
-            return True
-        except OperationFailure as e:
-            # If we get permission denied, log a warning but don't fail
-            if "not allowed to do action" in str(e):
-                self.logger.warning(f"Skipping collection setup - insufficient permissions: {str(e)}")
-                return True
-            self.logger.error(f"Failed to setup collections: {str(e)}")
-            return False
-        except Exception as e:
-            self.logger.error(f"Unexpected error in _setup_collections: {str(e)}")
-            return False
-
-    async def _setup_indexes(self):
-        """Set up necessary indexes for collections"""
-        try:
-            # Account collection indexes
-            await self.db.accounts.create_index("user_id", unique=True)
-            await self.db.accounts.create_index("guild_id")
-            await self.db.accounts.create_index([("branch_name", ASCENDING), ("balance", DESCENDING)])
-            await self.db.accounts.create_index("upi_id", sparse=True)
-            # Add indexes for account type and interest calculation
-            await self.db.accounts.create_index([("account_type", ASCENDING)])
-            await self.db.accounts.create_index([("account_type", ASCENDING), ("last_interest_calculation", ASCENDING)])
-            # Add index for fixed deposits
-            await self.db.accounts.create_index(
-                [("account_type", ASCENDING), ("fixed_deposit.maturity_date", ASCENDING)]
-            )
-
-            # Transaction collection indexes
-            await self.db.transactions.create_index("user_id")
-            await self.db.transactions.create_index("timestamp")
-            await self.db.transactions.create_index([("user_id", ASCENDING), ("timestamp", DESCENDING)])
-            await self.db.transactions.create_index("receiver_id")
-            # Add index for transaction type
-            await self.db.transactions.create_index(
-                [("user_id", ASCENDING), ("type", ASCENDING), ("timestamp", DESCENDING)]
-            )
-
-            # KYC attempts collection indexes
-            await self.db.failed_kyc_attempts.create_index("User_Id")
-            await self.db.failed_kyc_attempts.create_index("timestamp")
-            await self.db.failed_kyc_attempts.create_index([("User_Id", ASCENDING), ("timestamp", DESCENDING)])
-
-            # Guild commands collection indexes
-            await self.db.guild_commands.create_index("guild_id", unique=True)
-
-            # Add TTL index for cache collection
-            await self.db.cache.create_index("expires_at", expireAfterSeconds=0)
-
-            self.logger.info({"event": "Database indexes created", "level": "info"})
-        except OperationFailure as e:
-            raise DatabaseError(f"Failed to set up database indexes: {str(e)}")
-
-    async def cog_unload(self):
-        """Clean up database connections"""
-        try:
-            await self.client.close()
-            self.logger.info({"event": "Database connection closed", "level": "info"})
-        except Exception as e:
-            # Log the error instead of silently ignoring it
-            self.logger.warning(
-                {"event": "Failed to cleanly close database connection", "error": str(e), "level": "warning"}
-            )
-            # Still proceed with unloading
-
-    def _validate_id(self, id_str: str) -> bool:
-        """Validate Discord ID format with improved security checks"""
-        # Discord IDs must be numeric and between 17-19 digits (snowflake format)
-        if not id_str or not isinstance(id_str, str):
-            return False
-
-        # Check if ID contains only digits
-        if not id_str.isdigit():
-            return False
-
-        # Verify ID length is valid for Discord snowflake
-        id_length = len(id_str)
-        if not (17 <= id_length <= 19):
-            return False
-
-        # Additional security check - validate timestamp portion of snowflake
-        try:
-            # Discord snowflakes have timestamp in the first 42 bits
-            # This converts the ID to an integer, then bit-shifts to get the timestamp
-            # 22 = number of bits for worker, process, and increment
-            snowflake_int = int(id_str)
-            timestamp_ms = (snowflake_int >> 22) + 1420070400000  # Discord epoch (2015-01-01T00:00:00.000Z)
-
-            # Check if timestamp is in a reasonable range (between Discord epoch and current time + 1 day)
-            current_ms = int(datetime.utcnow().timestamp() * 1000)
-
-            # If timestamp from snowflake is before Discord's epoch or in the future (allowing 1 day for clock skew)
-            if timestamp_ms < 1420070400000 or timestamp_ms > (current_ms + 86400000):
-                return False
-        except (ValueError, OverflowError):
-            # Any failure in conversion should fail validation
-            return False
-
-        return True
-
-    def _sanitize_input(self, input_str: str) -> str:
-        """Sanitize input strings to prevent injection with stronger rules"""
-        if not input_str:
-            return ""
-        # More strict sanitization to only allow alphanumeric, spaces, and common symbols
-        sanitized = re.sub(r"[^a-zA-Z0-9\s\-_\.\,\:\;\(\)\[\]\{\}\!\?]", "", str(input_str))
-        # Additional safety trims
-        return sanitized.strip()[:500]  # Limit length to 500 chars for safety
-
-    @measure_performance
-    async def create_account(self, user_id, username, guild_id, guild_name, initial_balance=0):
-        """Create a new bank account"""
-        if self.db is None:
-            self.logger.error(f"Cannot create account for {username}: database not initialized")
-            return None
-
-        try:
-            # Check if account already exists to avoid duplicates
-            existing = await self.db.accounts.find_one({"user_id": user_id, "guild_id": guild_id})
-            if existing:
-                self.logger.info(f"Account already exists for user {username} in guild {guild_name}")
-                return existing
-
-            # Create new account document
-            account = {
-                "user_id": user_id,
-                "username": username,
-                "guild_id": guild_id,
-                "guild_name": guild_name,
-                "balance": initial_balance,
-                "created_at": datetime.utcnow(),
-                "last_updated": datetime.utcnow(),
-                "credit_score": 500,  # Default starting credit score
-                "transaction_count": 0,
-            }
-
-            # Insert the new account
-            result = await self._execute_with_retry(
-                f"Create account for {username}", lambda: self.db.accounts.insert_one(account)
-            )
-
-            if result:
-                account["_id"] = result.inserted_id
-                self.logger.info(f"Created new account for {username} in {guild_name}")
-                return account
-            else:
-                self.logger.error(f"Failed to create account for {username} in {guild_name}")
-                return None
-        except Exception as e:
-            self.logger.error(f"Error creating account for {username}: {str(e)}")
-            return None
-
-    @measure_performance
-    @smart_cache(ttl=300)  # Cache for 5 minutes
-    async def get_account(self, user_id, guild_id):
-        """Get an account by user ID and guild ID"""
-        try:
-            account = await self._execute_with_retry(
-                f"Get account for user {user_id}",
-                lambda: self.db.accounts.find_one({"user_id": user_id, "guild_id": guild_id}),
-            )
-
-            if account:
-                return account
-            else:
-                self.logger.info(f"No account found for user {user_id} in guild {guild_id}")
-                return None
-        except Exception as e:
-            self.logger.error(f"Error retrieving account for user {user_id}: {str(e)}")
-            return None
-
-    @measure_performance
-    async def update_balance(self, user_id, guild_id, amount, transaction_type, reason=None):
-        """Update user balance with proper transaction logging"""
-        if self.db is None:
-            self.logger.error(f"Cannot update balance for user {user_id}: database not initialized")
-            return False
-
-        try:
-            # Get current account
-            account = await self.get_account(user_id, guild_id)
-            if not account:
-                self.logger.warning(f"Cannot update balance: No account found for user {user_id} in guild {guild_id}")
-                return False
-
-            # Calculate new balance
-            current_balance = account.get("balance", 0)
-            new_balance = current_balance + amount
-
-            # Don't allow negative balances (unless it's a special transaction)
-            if new_balance < 0 and transaction_type not in ["loan_disbursal", "admin_adjustment"]:
-                self.logger.warning(
-                    f"Rejected negative balance update for user {user_id}: current={current_balance}, change={amount}"
-                )
-                return False
-
-            # Update account and create transaction record
-            update_result = await self._execute_with_retry(
-                f"Update balance for user {user_id}",
-                lambda: self.db.accounts.update_one(
-                    {"user_id": user_id, "guild_id": guild_id},
-                    {
-                        "$set": {"balance": new_balance, "last_updated": datetime.utcnow()},
-                        "$inc": {"transaction_count": 1},
-                    },
-                ),
-            )
-
-            if not update_result or update_result.modified_count == 0:
-                self.logger.error(f"Failed to update balance for user {user_id}")
-                return False
-
-            # Log the transaction
-            transaction = {
-                "user_id": user_id,
-                "guild_id": guild_id,
-                "username": account.get("username", "Unknown"),
-                "type": transaction_type,
-                "amount": amount,
-                "balance_before": current_balance,
-                "balance_after": new_balance,
-                "reason": reason or "No reason provided",
-                "timestamp": datetime.utcnow(),
-            }
-
-            transaction_result = await self._execute_with_retry(
-                f"Log transaction for user {user_id}",
-                lambda: self.db.transactions.insert_one(transaction),
-            )
-
-            if transaction_result:
-                self.logger.info(
-                    f"Updated balance for {account.get('username', 'Unknown')}: {amount:+} ({transaction_type})"
-                )
-                return True
-            else:
-                self.logger.error(f"Failed to log transaction for user {user_id}")
-                return False
-        except Exception as e:
-            self.logger.error(f"Error updating balance for user {user_id}: {str(e)}")
-            return False
-
-    @measure_performance("log_failed_kyc_attempt")
-    async def log_failed_kyc_attempt(
-        self,
-        user_id: str,
-        provided_user_id: str,
-        guild_id: str,
-        provided_guild_id: str,
-        reason: str,
-    ) -> bool:
-        """Log failed KYC attempts with validation"""
-        try:
-            if not all(self._validate_id(id) for id in [user_id, provided_user_id, guild_id, provided_guild_id]):
-                raise ValidationError("Invalid Discord ID format")
-
-            reason = self._sanitize_input(reason)
-
-            failed_kyc_collection = self.db["failed_kyc_attempts"]
-            await failed_kyc_collection.insert_one(
-                {
-                    "User_Id": user_id,
-                    "Provided_User_Id": provided_user_id,
-                    "Branch_Id": guild_id,
-                    "Provided_Branch_Id": provided_guild_id,
-                    "reason": reason,
-                    "timestamp": datetime.now(),
-                }
-            )
-            return True
-        except OperationFailure as e:
-            raise DatabaseError(f"Failed to log KYC attempt: {str(e)}")
-        except Exception as e:
-            raise DatabaseError(f"Unexpected error in log_failed_kyc_attempt: {str(e)}")
-
-    @measure_performance("log_transaction")
-    async def log_transaction(
-        self,
-        user_id: str,
-        transaction_type: str,
-        amount: int | float,
-        description: str = None,
-        receiver_id: str = None,
-        balance_before: float = None,
-        balance_after: float = None,
-    ) -> str | None:
-        """
-        Log a transaction with detailed information
-
-        Args:
-            user_id: The user's Discord ID
-            transaction_type: Type of transaction (deposit, withdrawal, transfer, etc.)
-            amount: Amount of money involved in the transaction
-            description: Optional description of the transaction
-            receiver_id: Optional recipient's Discord ID (for transfers)
-            balance_before: Optional balance before the transaction
-            balance_after: Optional balance after the transaction
-
-        Returns:
-            Transaction ID if successful, None otherwise
-        """
-        try:
-            if not self._validate_id(user_id):
-                raise ValidationError("Invalid sender Discord ID format")
-
-            if receiver_id and not self._validate_id(receiver_id):
-                raise ValidationError("Invalid receiver Discord ID format")
-
-            if not isinstance(amount, (int, float)) or amount <= 0:
-                raise ValidationError("Invalid transaction amount")
-
-            # Create a unique transaction ID
-            transaction_id = f"TXN-{int(time.time())}-{uuid.uuid4().hex[:8]}"
-
-            # Sanitize inputs
-            transaction_type = self._sanitize_input(transaction_type)
-            if description:
-                description = self._sanitize_input(description)
-
-            # Create transaction document
-            transaction = {
-                "transaction_id": transaction_id,
-                "user_id": user_id,
-                "transaction_type": transaction_type,
-                "amount": amount,
-                "description": description,
-                "receiver_id": receiver_id,
-                "balance_before": balance_before,
-                "balance_after": balance_after,
-                "timestamp": datetime.utcnow(),
-            }
-
-            # Insert transaction
-            await self.db.transactions.insert_one(transaction)
-
-            self.logger.info(
-                {
-                    "event": "Transaction logged",
-                    "transaction_id": transaction_id,
-                    "user_id": user_id,
-                    "transaction_type": transaction_type,
-                    "amount": amount,
-                    "level": "info",
-                }
-            )
-
-            return transaction_id
-        except Exception as e:
-            self.logger.error(
-                {
-                    "event": "Error logging transaction",
-                    "error": str(e),
-                    "user_id": user_id,
-                    "transaction_type": transaction_type,
-                    "amount": amount,
-                    "level": "error",
-                }
-            )
-            return None
-
-    @measure_performance("get_transactions")
-    async def get_transactions(self, user_id: str, limit: int = 10, skip: int = 0):
-        """Get user transactions with pagination"""
-        try:
-            transactions = (
-                await self.db.transactions.find({"user_id": user_id})
-                .sort("timestamp", -1)
-                .skip(skip)
-                .limit(limit)
-                .to_list(None)
-            )
-
-            return transactions
-        except Exception as e:
-            self.logger.error(
-                {
-                    "event": "Error fetching transactions",
-                    "error": str(e),
-                    "user_id": user_id,
-                    "level": "error",
-                }
-            )
-            return []
-
-    async def get_transactions_by_type_and_date(self, user_id: str, transaction_type: str, date: datetime.date):
-        """Get user transactions of a specific type on a specific date"""
-        try:
-            # Create date range for the given date (from start to end of day)
-            start_of_day = datetime.datetime.combine(date, datetime.time.min)
-            end_of_day = datetime.datetime.combine(date, datetime.time.max)
-
-            transactions = await self.db.transactions.find(
-                {
-                    "user_id": user_id,
-                    "transaction_type": transaction_type,
-                    "timestamp": {"$gte": start_of_day, "$lte": end_of_day},
-                }
-            ).to_list(None)
-
-            return transactions
-        except Exception as e:
-            self.logger.error(
-                {
-                    "event": "Error fetching transactions by type and date",
-                    "error": str(e),
-                    "user_id": user_id,
-                    "transaction_type": transaction_type,
-                    "date": str(date),
-                    "level": "error",
-                }
-            )
-            return []
-
-    def generate_upi_id(self, user_id: str) -> str:
-        """Generate a unique UPI ID"""
-        if not self._validate_id(user_id):
-            raise ValidationError("Invalid Discord ID format")
-
-        bank_name = "quantumbank"
-        random_suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=4))
-        return f"{user_id}@{bank_name}.{random_suffix}"
-
-    @measure_performance("set_upi_id")
-    async def set_upi_id(self, user_id: str) -> str | None:
-        """Set UPI ID with validation"""
-        try:
-            if not self._validate_id(user_id):
-                raise ValidationError("Invalid Discord ID format")
-
-            upi_id = self.generate_upi_id(user_id)
-            accounts_collection = self.db["accounts"]
-
-            async with await self.client.start_session() as session:
-                async with session.start_transaction():
-                    result = await accounts_collection.update_one(
-                        {"user_id": user_id},
-                        {"$set": {"upi_id": upi_id, "last_updated": datetime.now()}},
-                        upsert=False,
-                    )
-                    return upi_id if result.modified_count > 0 else None
-        except OperationFailure as e:
-            raise DatabaseError(f"Failed to set UPI ID: {str(e)}")
-        except Exception as e:
-            raise DatabaseError(f"Unexpected error in set_upi_id: {str(e)}")
-
-    @measure_performance
-    @smart_cache(ttl=600)  # Cache for 10 minutes
-    async def get_leaderboard(self, branch_name: str, limit: int = 10) -> list[dict[str, Any]]:
-        """Get a leaderboard of users in a specific branch, sorted by balance"""
-        try:
-            branch_name = self._sanitize_input(branch_name)
-
-            # Add projection to limit returned fields
-            projection = {"user_id": 1, "username": 1, "balance": 1, "branch_name": 1, "_id": 1}
-
-            cursor = self.db.accounts.find({"branch_name": branch_name, "balance": {"$gt": 0}}, projection)
-
-            cursor.sort("balance", -1).limit(limit)
-
-            # Try to use index hint if available
-            try:
-                cursor.hint("balance_-1")
-            except Exception as e:
-                # If index doesn't exist, don't fail the query
-                self.logger.debug(f"Cannot use balance_-1 index for leaderboard: {str(e)}")
-
-            return await cursor.to_list(length=limit)
-        except Exception as e:
-            self.logger.error(f"Error getting leaderboard: {str(e)}")
-            return []
-
-    @measure_performance("update_user_branch")
-    async def update_user_branch(self, user_id: str, branch_id: str, branch_name: str) -> bool:
-        """Update user's branch with validation"""
-        try:
-            if not self._validate_id(user_id) or not self._validate_id(branch_id):
-                raise ValidationError("Invalid Discord ID format")
-
-            branch_name = self._sanitize_input(branch_name)
-
-            async with await self.client.start_session() as session:
-                async with session.start_transaction():
-                    result = await self.db.accounts.update_one(
-                        {"user_id": user_id},
-                        {
-                            "$set": {
-                                "branch_id": branch_id,
-                                "branch_name": branch_name,
-                                "last_updated": datetime.now(),
-                            }
-                        },
-                        upsert=False,
-                    )
-                    return result.modified_count > 0
-        except OperationFailure as e:
-            raise DatabaseError(f"Failed to update user branch: {str(e)}")
-        except Exception as e:
-            raise DatabaseError(f"Unexpected error in update_user_branch: {str(e)}")
-
-    @measure_performance("toggle_command")
-    async def toggle_command(self, guild_id: str, command_name: str, status: bool) -> bool:
-        """Toggle command status with validation"""
-        try:
-            if not self._validate_id(guild_id):
-                raise ValidationError("Invalid Discord ID format")
-
-            command_name = self._sanitize_input(command_name)
-
-            async with await self.client.start_session() as session:
-                async with session.start_transaction():
-                    result = await self.db["guild_commands"].update_one(
-                        {"guild_id": guild_id}, {"$set": {command_name: status}}, upsert=True
-                    )
-                    return result.modified_count > 0 or result.upserted_id is not None
-        except OperationFailure as e:
-            raise DatabaseError(f"Failed to toggle command: {str(e)}")
-        except Exception as e:
-            raise DatabaseError(f"Unexpected error in toggle_command: {str(e)}")
-
-    @measure_performance
-    @smart_cache(ttl=1800)  # Cache for 30 minutes
-    async def get_command_status(self, guild_id: str, command_name: str) -> bool:
-        """Get command status with error handling"""
-        try:
-            if not self._validate_id(guild_id):
-                raise ValidationError("Invalid Discord ID format")
-
-            command_name = self._sanitize_input(command_name)
-
-            guild_commands = await self.db["guild_commands"].find_one({"guild_id": guild_id})
-            return guild_commands.get(command_name, True) if guild_commands else True
-        except OperationFailure as e:
-            raise DatabaseError(f"Failed to get command status: {str(e)}")
-        except Exception as e:
-            raise DatabaseError(f"Unexpected error in get_command_status: {str(e)}")
-
-    @measure_performance("ping_db")
-    async def ping_db(self) -> bool:
-        """Check if database connection is working"""
-        try:
-            # Check if client exists
-            if self.client is None:
-                self.logger.error({"event": "Database client is None", "level": "error"})
-                return False
-
-            # Just try a simple ping command on the database itself
-            if self.db is not None:  # Changed this condition
-                try:
-                    ping_result = await self.db.command("ping")
-                    if ping_result and ping_result.get("ok", 0) == 1:
-                        return True
-                except Exception as e:
-                    self.logger.error(f"Ping command failed: {e}")
-                    return False
-
-            # If we got here, the ping failed or db is None
-            return False
-        except Exception as e:
-            self.logger.error(
-                {
-                    "event": "Unexpected database error during ping",
-                    "error": str(e),
-                    "level": "error",
-                }
-            )
-            return False
-
-    def _calculate_interest_rate_by_balance(self, balance: float) -> float:
-        """Calculate interest rate based on account balance tiers"""
-        if balance >= 1000000:  # $1M+
-            return 5.0
-        elif balance >= 500000:  # $500K+
-            return 4.5
-        elif balance >= 100000:  # $100K+
-            return 4.0
-        elif balance >= 50000:  # $50K+
-            return 3.5
-        elif balance >= 10000:  # $10K+
-            return 3.0
-        else:
-            return 2.5  # Base rate
-
-    async def calculate_interest(self, user_id: str) -> bool:
-        """Calculate and apply interest for savings accounts"""
-        try:
-            account = await self.get_account(user_id)
-            if not account or account.get("account_type") != "savings":
-                return False
-
-            # Check if account balance has changed enough to adjust interest rate
-            current_balance = account["balance"]
-            current_interest_rate = account.get("interest_rate", 2.5)
-
-            # Calculate appropriate interest rate based on balance tiers
-            new_interest_rate = self._calculate_interest_rate_by_balance(current_balance)
-
-            # Update interest rate if it changed
-            if new_interest_rate != current_interest_rate:
-                await self.update_account(user_id, {"interest_rate": new_interest_rate})
-                self.logger.info(
-                    {
-                        "event": "Interest rate adjusted based on balance",
-                        "user_id": user_id,
-                        "previous_rate": current_interest_rate,
-                        "new_rate": new_interest_rate,
-                        "balance": current_balance,
-                        "level": "info",
-                    }
-                )
-                # Use the new rate for calculation
-                interest_rate = new_interest_rate
-            else:
-                interest_rate = current_interest_rate
-
-            last_calculation = account.get("last_interest_calculation", account["created_at"])
-            current_time = datetime.utcnow()
-
-            # Calculate days since last interest calculation
-            days = (current_time - last_calculation).days
-            if days < 1:  # Minimum 1 day for interest calculation
-                return False
-
-            # Calculate interest (simple interest)
-            balance = account["balance"]
-            interest = (balance * interest_rate * days) / (365 * 100)
-
-            # Log calculation details for transparency
-            self.logger.info(
-                {
-                    "event": "Interest calculation",
-                    "user_id": user_id,
-                    "balance": balance,
-                    "interest_rate": interest_rate,
-                    "days_since_last_calc": days,
-                    "interest_amount": interest,
-                    "level": "info",
-                }
-            )
-
-            # Update balance and last calculation time
-            new_balance = balance + interest
-            await self.update_balance(
-                user_id,
-                None,
-                new_balance,
-                "interest_credit",
-                f"Interest accrued at {interest_rate}%",
-            )
-
-            # Update last interest calculation time
-            await self.db.accounts.update_one(
-                {"user_id": user_id}, {"$set": {"last_interest_calculation": current_time}}
-            )
-
-            # Log interest transaction
-            await self.log_transaction(user_id=user_id, txn_type="interest_credit", amount=interest, receiver_id=None)
-
-            return True
-        except Exception as e:
-            self.logger.error(
-                {
-                    "event": "Failed to calculate interest",
-                    "error": str(e),
-                    "user_id": user_id,
-                    "level": "error",
-                }
-            )
-            return False
-
-    async def set_account_type(self, user_id: str, account_type: str, interest_rate: float = None) -> bool:
-        """Set account type and interest rate"""
-        try:
-            if account_type not in ["savings", "checking", "fixed_deposit"]:
-                raise ValidationError("Invalid account type")
-
-            update_data = {"account_type": account_type}
-            if account_type == "savings" and interest_rate is not None:
-                update_data["interest_rate"] = interest_rate
-                update_data["last_interest_calculation"] = datetime.utcnow()
-
-            result = await self.db.accounts.update_one({"user_id": user_id}, {"$set": update_data})
-            return result.modified_count > 0
-        except Exception as e:
-            self.logger.error(
-                {
-                    "event": "Failed to set account type",
-                    "error": str(e),
-                    "user_id": user_id,
-                    "account_type": account_type,
-                    "level": "error",
-                }
-            )
-            return False
-
-    async def create_fixed_deposit(self, user_id: str, fd_data: dict, new_balance: float) -> bool:
-        """Create a Fixed Deposit and update account balance"""
-        try:
-            async with await self.client.start_session() as session:
-                async with session.start_transaction():
-                    # Update account balance and add FD details
-                    result = await self.db.accounts.update_one(
-                        {"user_id": user_id},
-                        {
-                            "$set": {
-                                "balance": new_balance,
-                                "fixed_deposit": fd_data,
-                                "account_type": "fixed_deposit",
-                                "last_updated": datetime.utcnow(),
-                            }
-                        },
-                    )
-
-                    if result.modified_count > 0:
-                        # Log FD creation transaction
-                        await self.log_transaction(
-                            user_id=user_id,
-                            txn_type="fd_created",
-                            amount=fd_data["amount"],
-                            receiver_id=None,
-                        )
-                        return True
-                    return False
-        except Exception as e:
-            self.logger.error(
-                {
-                    "event": "Failed to create fixed deposit",
-                    "error": str(e),
-                    "user_id": user_id,
-                    "level": "error",
-                }
-            )
-            return False
-
-    async def check_fd_maturity(self, user_id: str) -> bool:
-        """Check and process matured Fixed Deposits"""
-        try:
-            account = await self.get_account(user_id)
-            if not account or not account.get("fixed_deposit"):
-                return False
-
-            fd = account["fixed_deposit"]
-            current_time = datetime.utcnow()
-
-            # Check if FD has matured
-            if current_time >= fd["maturity_date"]:
-                # Calculate final interest
-                months = fd["term_months"]
-                interest = (fd["amount"] * fd["interest_rate"] * months) / (12 * 100)
-                total_amount = fd["amount"] + interest
-
-                async with await self.client.start_session() as session:
-                    async with session.start_transaction():
-                        # Update account balance and remove FD
-                        result = await self.db.accounts.update_one(
-                            {"user_id": user_id},
-                            {
-                                "$inc": {"balance": total_amount},
-                                "$unset": {"fixed_deposit": ""},
-                                "$set": {"account_type": "savings", "last_updated": current_time},
-                            },
-                        )
-
-                        if result.modified_count > 0:
-                            # Log FD maturity transaction
-                            await self.log_transaction(
-                                user_id=user_id,
-                                transaction_type="fd_matured",
-                                amount=total_amount,
-                                description="Fixed deposit matured with interest",
-                            )
-                            return True
-                return False
-            return False
-        except Exception as e:
-            self.logger.error(
-                {
-                    "event": "Failed to check FD maturity",
-                    "error": str(e),
-                    "user_id": user_id,
-                    "level": "error",
-                }
-            )
-            return False
 
     @measure_performance("create_loan")
     async def create_loan(self, user_id: str, amount: float, term_months: int) -> bool:

@@ -1,7 +1,35 @@
 [tool.uv]
 exclude = [".venv", "venv", "build", "dist"]
 resolution = "highest"
+# Specify Python version requirement
+python-version = ">=3.12.0"
+# Add strict resolver to prevent dependency conflicts
+strict-resolver = true
+# Enable modern dependency management features
+advanced-lockfile = true
+# Cache settings for better performance
+cache-dir = ".cache/uv"
+
+[tool.uv.sources]
+# Use the official PyPI index as the primary source
+default = "https://pypi.org/simple"
 
 [tool.uv.virtualenv]
 path = ".venv"
 prompt = "quantum-bank"
+# Ensure the virtual environment uses Python 3.12+
+python = "3.12"
+# Include pip for compatibility with other tools
+include-pip = true
+# Include system packages for better performance
+include-system-packages = false
+# Add default packages that should be available in all environments
+extras = ["development", "high-performance"]
+
+[tool.uv.pip]
+# Don't compile bytecode during installation for faster installs
+no-compile = false
+# Use binary packages when available for better performance
+prefer-binary = true
+# Don't warn about running as root in Docker
+no-warn-script-location = true

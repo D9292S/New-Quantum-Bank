@@ -1,6 +1,6 @@
 # Quantum Bank Discord Bot
 
-Quantum Bank is a feature-rich Discord economy bot with advanced banking features, built using Discord.py and MongoDB.
+Quantum Bank is a feature-rich Discord economy bot with advanced banking features, built using Pycord and MongoDB.
 
 ![Quantum Bank Banner](images/quantum_bank_banner.png)
 
@@ -16,6 +16,7 @@ Quantum Bank is a feature-rich Discord economy bot with advanced banking feature
 - 🎨 **Colorful console logs** with JSON formatting
 - 🔄 **Seamless MongoDB integration** for reliable data storage
 - ⚡ **High performance design** with sharding and clustering support
+- 🚀 **Memory & database optimizations** with smart caching, memory monitoring, and batch processing
 
 ## Command Examples
 
@@ -46,7 +47,7 @@ Quantum Bank is a feature-rich Discord economy bot with advanced banking feature
 
 ## Prerequisites
 
-- Python 3.8 or higher
+- Python 3.12 or higher
 - MongoDB database (local or Atlas)
 - Discord Bot Token
 
@@ -62,9 +63,9 @@ Quantum Bank is a feature-rich Discord economy bot with advanced banking feature
    ```bash
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
-   Or on Windows:
-   ```bash
-   powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+   Or on Windows, run our setup script:
+   ```
+   setup.bat
    ```
 
 3. Install the package with dependencies (uv will automatically create a virtual environment):
@@ -271,6 +272,91 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- [Discord.py](https://github.com/Rapptz/discord.py)
+- [Pycord](https://github.com/Pycord-Development/pycord)
 - [Motor](https://github.com/mongodb/motor)
 - All contributors who have helped to improve this project
+
+## Advanced Package Management
+
+This project uses the [uv](https://github.com/astral-sh/uv) package manager for fast, reliable Python dependency management. We provide several tools to make package management easier:
+
+### Using the UV Tool
+
+The project includes a convenient wrapper for common uv operations. On Windows, use `uv.bat`; on Unix systems, use `./uv.sh`:
+
+```bash
+# Update dependencies to latest compatible versions
+./uv.sh update
+
+# Clean the environment and rebuild from scratch
+./uv.sh clean --dev
+
+# Add a new package
+./uv.sh add requests
+
+# Add a development dependency
+./uv.sh add --dev black
+
+# Remove a package
+./uv.sh remove requests
+
+# List installed packages
+./uv.sh list
+
+# Check for outdated packages and compatibility issues
+./uv.sh check
+```
+
+### Verifying Your Environment
+
+To check if your environment is correctly set up for running the bot with Python 3.12+:
+
+```bash
+python scripts/check_environment.py
+```
+
+This will verify:
+- Python version is 3.12+
+- UV is installed and working
+- Required system packages are available
+- Project dependencies are correctly configured
+
+## Performance Optimizations
+
+Quantum Bank includes advanced performance optimizations to ensure smooth operation even with large user bases:
+
+### Memory Management
+
+The bot includes intelligent memory management that:
+- Monitors memory usage and prevents memory leaks
+- Automatically triggers garbage collection when needed
+- Tracks resource-intensive operations
+- Provides memory usage statistics for diagnostics
+
+### Database Optimizations
+
+Database performance is enhanced through:
+- Smart query caching for frequently accessed data
+- Batch processing for database operations
+- Automatic retry mechanisms for transient errors
+- Query profiling to identify and optimize slow queries
+
+### Performance Monitoring
+
+The bot continuously monitors its own performance:
+- Real-time tracking of command execution times
+- Memory usage statistics and trends
+- Database query performance metrics
+- Automatic detection of performance bottlenecks
+
+To check if optimizations are functioning correctly, run:
+
+```bash
+python tools/check_optimizations.py
+```
+
+For detailed performance benchmarks, use:
+
+```bash
+python tools/run_performance_tests.py
+```

@@ -26,6 +26,16 @@ jobs:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           heroku stack:set container --app ${{ secrets.HEROKU_APP_NAME }}
+      
+      - name: Configure Heroku environment variables
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          # Set performance optimization configuration
+          heroku config:set PERFORMANCE_MODE=high --app ${{ secrets.HEROKU_APP_NAME }}
+          heroku config:set MEMORY_LIMIT_MB=500 --app ${{ secrets.HEROKU_APP_NAME }}
+          heroku config:set QUERY_CACHE_SIZE=2000 --app ${{ secrets.HEROKU_APP_NAME }}
+          heroku config:set QUERY_CACHE_TTL=600 --app ${{ secrets.HEROKU_APP_NAME }}
           
       - name: Build and Push to Heroku
         uses: akhileshns/heroku-deploy@v3.12.14
@@ -54,10 +64,20 @@ jobs:
         run: |
           heroku ps:scale web=1 worker=1 --app ${{ secrets.HEROKU_APP_NAME }}
           
-      - name: Health check
+      - name: Wait for deployment
         run: |
           echo "Waiting for deployment to complete..."
           sleep 45
+      
+      - name: Verify optimizations
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          echo "Checking if optimizations are running correctly..."
+          heroku run python heroku_scripts/check_optimizations.py --app ${{ secrets.HEROKU_APP_NAME }}
+          
+      - name: Health check
+        run: |
           curl -f https://${{ secrets.HEROKU_APP_NAME }}.herokuapp.com/health || echo "Health check failed - check logs with 'heroku logs --tail'"
           
       - name: Status check

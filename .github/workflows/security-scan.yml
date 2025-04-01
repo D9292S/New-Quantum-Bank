@@ -19,10 +19,13 @@ jobs:
       with:
         python-version: '3.12'
 
-    - name: Install UV and security tools
+    - name: Install UV
       run: |
-        python -m pip install --upgrade pip
-        pip install uv
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Install security tools with UV
+      run: |
         uv pip install --system bandit safety
 
     - name: Install project with UV
