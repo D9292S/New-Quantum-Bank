@@ -5,7 +5,7 @@
 [![PyPI Version](https://img.shields.io/pypi/v/quantum-bank)](https://pypi.org/project/quantum-bank/)
 [![Downloads](https://img.shields.io/pypi/dm/quantum-bank)](https://pypi.org/project/quantum-bank/)
 [![Discord](https://img.shields.io/discord/987654321?label=Discord&logo=discord)](https://discord.gg/Z5u4FvDJ5C)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/D9292S/New-Quantum-Bank/ci.yml)](https://github.com/D9292S/New-Quantum-Bank/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/D9292S/New-Quantum-Bank/python-ci.yml)](https://github.com/D9292S/New-Quantum-Bank/actions)
 [![Code Coverage](https://img.shields.io/codecov/c/github/D9292S/New-Quantum-Bank)](https://codecov.io/gh/D9292S/New-Quantum-Bank)
 [![Contributors](https://img.shields.io/github/contributors/D9292S/New-Quantum-Bank)](https://github.com/D9292S/New-Quantum-Bank/contributors)
 [![GitHub Issues](https://img.shields.io/github/issues/D9292S/New-Quantum-Bank)](https://github.com/D9292S/New-Quantum-Bank/issues)
