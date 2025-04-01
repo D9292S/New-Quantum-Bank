@@ -180,3 +180,38 @@ project_overview.md
 commands_reference.txt
 docs/_build/
 site/
+
+# CI/CD related
+.github/workflows/.env
+test-summary.md
+test-results/
+junit-*.xml
+coverage-*.xml
+bandit-results.json
+snyk-results.json
+security-scan-results/
+deployment-logs/
+.github/actions/local-cache/
+
+# Docker related
+.docker/
+docker-compose.override.yml
+docker-compose.*.yml
+!docker-compose.yml
+Dockerfile.local
+.dockerignore
+
+# Heroku
+.heroku/
+*.dump
+
+# Node (for GitHub Actions scripts)
+node_modules/
+package-lock.json
+npm-debug.log
+yarn-debug.log*
+yarn-error.log*
+
+# Canary deployment
+canary-metrics/
+canary-logs/

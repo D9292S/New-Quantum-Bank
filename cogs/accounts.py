@@ -321,7 +321,7 @@ class Account(commands.Cog):
         except Exception as e:
             self.logger.error(f"Credit score update task failed: {str(e)}")
 
-    @commands.slash_command(name="register", description="Register your bank account")
+    @commands.slash_command(name="register", description="Register your bank account (You can also use /dashboard for an improved experience)")
     async def register_command(self, ctx):
         """Register a new bank account"""
         try:
@@ -364,6 +364,14 @@ class Account(commands.Cog):
 
                 await ctx.respond(embed=embed)
                 self.logger.info(f"Account registered for {username} in {guild_name}")
+                
+                # Add dashboard suggestion
+                dashboard_embed = discord.Embed(
+                    title="💡 Try the New Dashboard!",
+                    description="Use `/dashboard` for an interactive account management experience with more features!",
+                    color=discord.Color.gold()
+                )
+                await ctx.followup.send(embed=dashboard_embed, ephemeral=True)
             else:
                 await ctx.respond("⚠️ Failed to create your account. Please try again later.", ephemeral=True)
                 self.logger.error(f"Failed to register account for {username}")
@@ -712,7 +720,7 @@ class Account(commands.Cog):
         )
         await ctx.respond(embed=embed, ephemeral=True)
 
-    @discord.slash_command(description="Initiate KYC verification for account creation.")
+    @discord.slash_command(description="Initiate KYC verification for account creation. After creation, try /dashboard")
     async def create_account(self, ctx):
         """Initiates KYC verification for account creation."""
         if not self.db:
@@ -1003,7 +1011,7 @@ class Account(commands.Cog):
 
         await ctx.respond("Are you sure you want to make this payment?", view=view)
 
-    @discord.slash_command(description="Check your account balance and view your passbook.")
+    @discord.slash_command(description="Check your account balance and view your passbook. Try /dashboard for an interactive experience")
     async def passbook(self, ctx):
         """Generates and displays a passbook for the user."""
         if not self.db:
@@ -1035,6 +1043,14 @@ class Account(commands.Cog):
                 file=discord.File(fp=image_binary, filename="passbook.png"),
                 ephemeral=True,
             )
+            
+            # Add dashboard suggestion
+            dashboard_embed = discord.Embed(
+                title="💡 Enhanced View Available!",
+                description="Use `/dashboard` for an interactive account management experience with more features!",
+                color=discord.Color.gold()
+            )
+            await ctx.followup.send(embed=dashboard_embed, ephemeral=True)
 
     @staticmethod
     def create_passbook_image(username, account, transactions, avatar_url):
@@ -1076,7 +1092,7 @@ class Account(commands.Cog):
         except Exception as e:
             raise PassbookError(f"Failed to create passbook image: {str(e)}")
 
-    @discord.slash_command(description="View your transaction history.")
+    @discord.slash_command(description="View your transaction history. For a better experience, try /dashboard")
     async def view_transactions(self, ctx):
         """View your transaction history."""
         if not self.db:
@@ -1098,8 +1114,16 @@ class Account(commands.Cog):
             color=discord.Color.blue(),
         )
         await ctx.respond(embed=embed)
+        
+        # Add dashboard suggestion
+        dashboard_embed = discord.Embed(
+            title="💡 Enhanced View Available!",
+            description="Use `/dashboard` for an interactive transaction history with advanced filtering!",
+            color=discord.Color.gold()
+        )
+        await ctx.followup.send(embed=dashboard_embed, ephemeral=True)
 
-    @discord.slash_command(description="View your account details.")
+    @discord.slash_command(description="View your account details. For a comprehensive view, try /dashboard")
     async def view_account_details(self, ctx):
         """View your account details."""
         if not self.db:
@@ -1117,6 +1141,14 @@ class Account(commands.Cog):
             color=discord.Color.blue(),
         )
         await ctx.respond(embed=embed)
+        
+        # Add dashboard suggestion
+        dashboard_embed = discord.Embed(
+            title="💡 Enhanced View Available!",
+            description="Use `/dashboard` for a comprehensive account overview with interactive options!",
+            color=discord.Color.gold()
+        )
+        await ctx.followup.send(embed=dashboard_embed, ephemeral=True)
 
     @discord.slash_command(description="Change your bank branch.")
     async def change_branch(self, ctx, new_branch: str):
@@ -1781,7 +1813,7 @@ class Account(commands.Cog):
                 minutes = delta.seconds // 60
                 return f"{minutes} minute{'s' if minutes != 1 else ''}"
 
-    @commands.slash_command(name="balance", description="Check your account balance")
+    @commands.slash_command(name="balance", description="Check your account balance. Try /dashboard for an interactive experience")
     async def balance_command(self, ctx):
         """Check your current bank account balance"""
         try:
@@ -1834,7 +1866,530 @@ class Account(commands.Cog):
 
             await ctx.respond(embed=embed)
             self.logger.info(f"Balance checked by {ctx.author.name} - ${balance:,.2f}")
+            
+            # Add dashboard suggestion
+            dashboard_embed = discord.Embed(
+                title="💡 Enhanced View Available!",
+                description="Use `/dashboard` for an interactive account overview with more features!",
+                color=discord.Color.gold()
+            )
+            await ctx.followup.send(embed=dashboard_embed, ephemeral=True)
 
         except Exception as e:
             await ctx.respond("⚠️ An error occurred while checking your balance", ephemeral=True)
             self.logger.error(f"Error in balance command: {str(e)}")
+
+    @discord.slash_command(description="View your complete account dashboard with interactive options")
+    async def dashboard(self, ctx):
+        """Interactive dashboard for viewing and managing your bank account"""
+        if not self.db:
+            raise ConnectionError("Database connection not initialized")
+
+        user_id = str(ctx.author.id)
+        account = await self._get_cached_account(user_id)
+
+        if not account:
+            embed = discord.Embed(
+                title="No Account Found",
+                description="You don't have an account yet! Would you like to create one?",
+                color=discord.Color.red()
+            )
+            
+            # Create account creation button
+            view = discord.ui.View()
+            create_button = discord.ui.Button(
+                label="Create Account", 
+                style=discord.ButtonStyle.green,
+                custom_id="create_account_button"
+            )
+            
+            async def create_button_callback(interaction):
+                await interaction.response.send_message(
+                    "Please use the `/create_account` command to start the account creation process.", 
+                    ephemeral=True
+                )
+            
+            create_button.callback = create_button_callback
+            view.add_item(create_button)
+            
+            await ctx.respond(embed=embed, view=view)
+            return
+
+        # Create main dashboard embed
+        embed = discord.Embed(
+            title="🏦 Account Dashboard",
+            description=f"Welcome to your Quantum Superbot banking dashboard, {ctx.author.mention}!",
+            color=discord.Color.blue()
+        )
+        
+        # Account Information
+        embed.add_field(
+            name="💰 Balance", 
+            value=f"${account.get('balance', 0):,.2f}", 
+            inline=True
+        )
+        embed.add_field(
+            name="🏛️ Branch", 
+            value=account.get('branch_name', 'Main Branch'), 
+            inline=True
+        )
+        
+        # Account Statistics
+        account_age = (datetime.utcnow() - account.get("created_at", datetime.utcnow())).days
+        embed.add_field(
+            name="📅 Account Age", 
+            value=f"{account_age} days", 
+            inline=True
+        )
+        
+        # Credit Information if available
+        if "credit_score" in account:
+            credit_score = account["credit_score"]
+            embed.add_field(
+                name="📊 Credit Score",
+                value=f"{credit_score} ({self._get_credit_rating(credit_score)})",
+                inline=True
+            )
+        
+        # Recent Activity - Last 3 transactions
+        transactions = await self._get_cached_transactions(user_id)
+        if transactions:
+            recent_txns = transactions[:3]
+            txn_text = "\n".join([
+                f"• {txn['type'].capitalize()}: ${txn['amount']:.2f} ({txn['timestamp'].strftime('%m/%d/%Y')})"
+                for txn in recent_txns
+            ])
+            embed.add_field(
+                name="📝 Recent Activity",
+                value=txn_text if txn_text else "No recent transactions",
+                inline=False
+            )
+        
+        # UPI Information if available
+        if "upi_id" in account and account["upi_id"]:
+            embed.add_field(
+                name="💳 UPI ID",
+                value=f"`{account['upi_id']}`",
+                inline=False
+            )
+        
+        # Active Loan Information if available
+        active_loan = None
+        try:
+            active_loan = await self.db.get_active_loan(user_id)
+        except Exception:
+            pass
+            
+        if active_loan:
+            embed.add_field(
+                name="💸 Active Loan",
+                value=f"Amount: ${active_loan.get('amount', 0):,.2f}\nRemaining: {active_loan.get('remaining_payments', 0)} payments",
+                inline=False
+            )
+
+        # Create action buttons
+        view = discord.ui.View(timeout=180)  # 3 minute timeout
+        
+        # Passbook button
+        passbook_button = discord.ui.Button(
+            label="View Passbook", 
+            style=discord.ButtonStyle.primary,
+            emoji="📒",
+            row=0
+        )
+        
+        async def passbook_callback(interaction):
+            await interaction.response.defer(ephemeral=True, thinking=True)
+            try:
+                passbook_image = self.create_passbook_image(
+                    ctx.author.name, 
+                    account, 
+                    transactions, 
+                    ctx.author.avatar.url
+                )
+                
+                if passbook_image is None:
+                    await interaction.followup.send(
+                        "Failed to generate your passbook. Please try again later.",
+                        ephemeral=True
+                    )
+                    return
+                    
+                # Send the passbook image
+                with io.BytesIO() as image_binary:
+                    passbook_image.save(image_binary, "PNG")
+                    image_binary.seek(0)
+                    await interaction.followup.send(
+                        content="Here's your passbook!",
+                        file=discord.File(fp=image_binary, filename="passbook.png"),
+                        ephemeral=True
+                    )
+            except Exception as e:
+                await interaction.followup.send(
+                    f"Error generating passbook: {str(e)}",
+                    ephemeral=True
+                )
+        
+        passbook_button.callback = passbook_callback
+        view.add_item(passbook_button)
+        
+        # Transactions button
+        transactions_button = discord.ui.Button(
+            label="Transaction History", 
+            style=discord.ButtonStyle.primary,
+            emoji="📜",
+            row=0
+        )
+        
+        async def transactions_callback(interaction):
+            if not transactions:
+                await interaction.response.send_message(
+                    "You don't have any transactions yet!",
+                    ephemeral=True
+                )
+                return
+                
+            # Format transactions
+            transaction_embed = discord.Embed(
+                title="Transaction History",
+                description="Your recent transactions:",
+                color=discord.Color.blue()
+            )
+            
+            # Group by month
+            txn_by_month = {}
+            for txn in transactions[:10]:  # Show last 10 transactions
+                month = txn['timestamp'].strftime("%B %Y")
+                if month not in txn_by_month:
+                    txn_by_month[month] = []
+                txn_by_month[month].append(txn)
+            
+            for month, txns in txn_by_month.items():
+                transaction_list = "\n".join([
+                    f"• {txn['type'].capitalize()}: ${txn['amount']:.2f} ({txn['timestamp'].strftime('%m/%d/%Y')})"
+                    for txn in txns
+                ])
+                transaction_embed.add_field(
+                    name=month,
+                    value=transaction_list,
+                    inline=False
+                )
+                
+            await interaction.response.send_message(
+                embed=transaction_embed,
+                ephemeral=True
+            )
+        
+        transactions_button.callback = transactions_callback
+        view.add_item(transactions_button)
+        
+        # Payment button
+        payment_button = discord.ui.Button(
+            label="Make Payment", 
+            style=discord.ButtonStyle.success,
+            emoji="💸",
+            row=1
+        )
+        
+        async def payment_callback(interaction):
+            await interaction.response.send_message(
+                "To make a payment, use the `/upi_payment` command with the recipient's UPI ID and amount.",
+                ephemeral=True
+            )
+        
+        payment_button.callback = payment_callback
+        view.add_item(payment_button)
+        
+        # Loan management button
+        loan_button = discord.ui.Button(
+            label="Loan Options", 
+            style=discord.ButtonStyle.success,
+            emoji="🏦",
+            row=1
+        )
+        
+        async def loan_callback(interaction):
+            loan_embed = discord.Embed(
+                title="Loan Options",
+                description="Choose a loan action:",
+                color=discord.Color.gold()
+            )
+            
+            loan_view = discord.ui.View(timeout=60)
+            
+            # Apply for loan
+            apply_button = discord.ui.Button(
+                label="Apply for Loan", 
+                style=discord.ButtonStyle.primary,
+                row=0
+            )
+            
+            async def apply_callback(inner_interaction):
+                await inner_interaction.response.send_message(
+                    "To apply for a loan, use the `/apply_loan` command with the desired amount and term.",
+                    ephemeral=True
+                )
+            
+            apply_button.callback = apply_callback
+            loan_view.add_item(apply_button)
+            
+            # Check loan status
+            status_button = discord.ui.Button(
+                label="Loan Status", 
+                style=discord.ButtonStyle.primary,
+                row=0
+            )
+            
+            async def status_callback(inner_interaction):
+                if not active_loan:
+                    await inner_interaction.response.send_message(
+                        "You don't have any active loans!",
+                        ephemeral=True
+                    )
+                    return
+                
+                loan_status_embed = discord.Embed(
+                    title="Loan Status",
+                    description="Details about your current loan:",
+                    color=discord.Color.blue()
+                )
+                
+                loan_status_embed.add_field(
+                    name="Loan Amount",
+                    value=f"${active_loan.get('amount', 0):,.2f}",
+                    inline=True
+                )
+                
+                loan_status_embed.add_field(
+                    name="Interest Rate",
+                    value=f"{active_loan.get('interest_rate', 0)}%",
+                    inline=True
+                )
+                
+                loan_status_embed.add_field(
+                    name="Term",
+                    value=f"{active_loan.get('term_months', 0)} months",
+                    inline=True
+                )
+                
+                loan_status_embed.add_field(
+                    name="Monthly Payment",
+                    value=f"${active_loan.get('monthly_payment', 0):,.2f}",
+                    inline=True
+                )
+                
+                loan_status_embed.add_field(
+                    name="Remaining Payments",
+                    value=f"{active_loan.get('remaining_payments', 0)}",
+                    inline=True
+                )
+                
+                loan_status_embed.add_field(
+                    name="Total Remaining",
+                    value=f"${active_loan.get('remaining_amount', 0):,.2f}",
+                    inline=True
+                )
+                
+                await inner_interaction.response.send_message(
+                    embed=loan_status_embed,
+                    ephemeral=True
+                )
+            
+            status_button.callback = status_callback
+            loan_view.add_item(status_button)
+            
+            # Repay loan
+            if active_loan:
+                repay_button = discord.ui.Button(
+                    label="Make Payment", 
+                    style=discord.ButtonStyle.success,
+                    row=1
+                )
+                
+                async def repay_callback(inner_interaction):
+                    await inner_interaction.response.send_message(
+                        f"To make a loan payment, use the `/repay_loan` command. Your monthly payment is ${active_loan.get('monthly_payment', 0):,.2f}.",
+                        ephemeral=True
+                    )
+                
+                repay_button.callback = repay_callback
+                loan_view.add_item(repay_button)
+            
+            # Loan calculator
+            calculator_button = discord.ui.Button(
+                label="Loan Calculator", 
+                style=discord.ButtonStyle.secondary,
+                row=1
+            )
+            
+            async def calculator_callback(inner_interaction):
+                await inner_interaction.response.send_message(
+                    "To calculate potential loan payments, use the `/loan_calculator` command with the desired amount and term.",
+                    ephemeral=True
+                )
+            
+            calculator_button.callback = calculator_callback
+            loan_view.add_item(calculator_button)
+            
+            await interaction.response.send_message(
+                embed=loan_embed,
+                view=loan_view,
+                ephemeral=True
+            )
+        
+        loan_button.callback = loan_callback
+        view.add_item(loan_button)
+        
+        # Credit score button
+        credit_button = discord.ui.Button(
+            label="Credit Report", 
+            style=discord.ButtonStyle.secondary,
+            emoji="📈",
+            row=2
+        )
+        
+        async def credit_callback(interaction):
+            credit_embed = discord.Embed(
+                title="Credit Options",
+                description="Choose a credit action:",
+                color=discord.Color.blurple()
+            )
+            
+            credit_view = discord.ui.View(timeout=60)
+            
+            # Credit score
+            score_button = discord.ui.Button(
+                label="Credit Score", 
+                style=discord.ButtonStyle.primary
+            )
+            
+            async def score_callback(inner_interaction):
+                try:
+                    credit_data = await self.db.get_credit_score(user_id)
+                    if not credit_data:
+                        await inner_interaction.response.send_message(
+                            "You don't have a credit profile yet! Use your account more to build credit history.",
+                            ephemeral=True
+                        )
+                        return
+                    
+                    score = credit_data.get('score', 0)
+                    
+                    score_embed = discord.Embed(
+                        title="Credit Score",
+                        description=f"Your current credit score is: **{score}**",
+                        color=discord.Color.blue()
+                    )
+                    
+                    rating = self._get_credit_rating(score)
+                    score_embed.add_field(
+                        name="Rating",
+                        value=rating,
+                        inline=True
+                    )
+                    
+                    # Add visual credit score meter
+                    score_meter = "█" * int(score / 100)
+                    score_meter = score_meter.ljust(10, "░")
+                    score_embed.add_field(
+                        name="Score Meter",
+                        value=f"`{score_meter}` {score}/1000",
+                        inline=False
+                    )
+                    
+                    await inner_interaction.response.send_message(
+                        embed=score_embed,
+                        ephemeral=True
+                    )
+                except Exception as e:
+                    await inner_interaction.response.send_message(
+                        f"Error retrieving credit score: {str(e)}",
+                        ephemeral=True
+                    )
+            
+            score_button.callback = score_callback
+            credit_view.add_item(score_button)
+            
+            # Full credit report
+            report_button = discord.ui.Button(
+                label="Full Credit Report", 
+                style=discord.ButtonStyle.primary
+            )
+            
+            async def report_callback(inner_interaction):
+                await inner_interaction.response.send_message(
+                    "To view your detailed credit report, use the `/credit_report` command.",
+                    ephemeral=True
+                )
+            
+            report_button.callback = report_callback
+            credit_view.add_item(report_button)
+            
+            await interaction.response.send_message(
+                embed=credit_embed,
+                view=credit_view,
+                ephemeral=True
+            )
+        
+        credit_button.callback = credit_callback
+        view.add_item(credit_button)
+        
+        # Settings button
+        settings_button = discord.ui.Button(
+            label="Account Settings", 
+            style=discord.ButtonStyle.secondary,
+            emoji="⚙️",
+            row=2
+        )
+        
+        async def settings_callback(interaction):
+            settings_embed = discord.Embed(
+                title="Account Settings",
+                description="Manage your account settings:",
+                color=discord.Color.greyple()
+            )
+            
+            settings_view = discord.ui.View(timeout=60)
+            
+            # Change branch
+            branch_button = discord.ui.Button(
+                label="Change Branch", 
+                style=discord.ButtonStyle.primary
+            )
+            
+            async def branch_callback(inner_interaction):
+                await inner_interaction.response.send_message(
+                    "To change your bank branch, use the `/change_branch` command with the new branch name.",
+                    ephemeral=True
+                )
+            
+            branch_button.callback = branch_callback
+            settings_view.add_item(branch_button)
+            
+            # Generate UPI
+            if "upi_id" not in account or not account["upi_id"]:
+                upi_button = discord.ui.Button(
+                    label="Generate UPI ID", 
+                    style=discord.ButtonStyle.primary
+                )
+                
+                async def upi_callback(inner_interaction):
+                    await inner_interaction.response.send_message(
+                        "To generate a UPI ID for your account, use the `/generate_upi` command.",
+                        ephemeral=True
+                    )
+                
+                upi_button.callback = upi_callback
+                settings_view.add_item(upi_button)
+            
+            await interaction.response.send_message(
+                embed=settings_embed,
+                view=settings_view,
+                ephemeral=True
+            )
+        
+        settings_button.callback = settings_callback
+        view.add_item(settings_button)
+        
+        # Send the main dashboard
+        await ctx.respond(embed=embed, view=view)
