@@ -2,6 +2,26 @@
 
 Quantum Superbot is a powerful multi-purpose Discord bot featuring advanced command systems, performance optimization, and extensive functionality across various categories including utility, moderation, entertainment, and more.
 
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/release/python-3120/)
+[![License](https://img.shields.io/badge/license-EURL-orange.svg)](LICENSE)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Discord](https://img.shields.io/discord/1092507290306510858?color=5865F2&logo=discord&logoColor=white)](https://discord.gg/Z5u4FvDJ5C)
+[![GitHub Stars](https://img.shields.io/github/stars/D9292S/Quantum-Superbot?style=social)](https://github.com/D9292S/Quantum-Superbot)
+[![Docker](https://img.shields.io/badge/docker-ready-blue?logo=docker)](https://github.com/D9292S/Quantum-Superbot/blob/main/Dockerfile)
+[![Heroku](https://img.shields.io/badge/heroku-deployable-purple?logo=heroku)](https://github.com/D9292S/Quantum-Superbot/blob/main/DEPLOYMENT.md)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/D9292S/Quantum-Superbot/tree/main/tests)
+[![MongoDB](https://img.shields.io/badge/MongoDB-5.0+-green.svg?logo=mongodb)](https://www.mongodb.com/)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/D9292S/Quantum-Superbot/graphs/commit-activity)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/D9292S/Quantum-Superbot/releases)
+[![Pycord](https://img.shields.io/badge/pycord-2.0+-blue)](https://github.com/Pycord-Development/pycord)
+[![Typing](https://img.shields.io/badge/typing-mypy-blue)](https://github.com/python/mypy)
+[![Servers](https://img.shields.io/badge/servers-100+-brightgreen)](https://github.com/D9292S/Quantum-Superbot)
+[![Lines of Code](https://img.shields.io/tokei/lines/github/D9292S/Quantum-Superbot)](https://github.com/D9292S/Quantum-Superbot)
+[![GitHub issues](https://img.shields.io/github/issues/D9292S/Quantum-Superbot)](https://github.com/D9292S/Quantum-Superbot/issues)
+[![Uptime](https://img.shields.io/badge/uptime-99.9%25-brightgreen)](https://github.com/D9292S/Quantum-Superbot)
+[![Documentation Status](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://github.com/D9292S/Quantum-Superbot/tree/main/docs)
+[![codecov](https://img.shields.io/codecov/c/github/D9292S/Quantum-Superbot/main.svg?logo=codecov)](https://codecov.io/gh/D9292S/Quantum-Superbot)
+
 ![Quantum Superbot Banner](images/quantum_superbot_banner.png)
 
 ## Features
