@@ -6,7 +6,7 @@ on:
       - develop
       - feature/*
   pull_request:
-    types: [labeled]
+    types: [opened, synchronize, labeled, unlabeled]
     branches:
       - develop
   workflow_dispatch:
