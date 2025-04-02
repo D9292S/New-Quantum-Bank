@@ -1610,3 +1610,22 @@ class Database(commands.Cog):
         except Exception as e:
             self.logger.error(f"Failed to create TTL index: {str(e)}")
             return False
+
+    async def _run_performance_monitoring(self):
+        """
+        Periodically monitor database performance metrics.
+        This method is mocked in tests to avoid actual monitoring during testing.
+        """
+        try:
+            while True:
+                # Log current performance metrics if available
+                if hasattr(self, 'performance_monitor'):
+                    self.performance_monitor.log_slow_operations()
+                
+                # Wait before next check (5 minutes)
+                await asyncio.sleep(300)
+        except asyncio.CancelledError:
+            # Gracefully handle cancellation
+            self.logger.info("Performance monitoring task cancelled")
+        except Exception as e:
+            self.logger.error(f"Error in performance monitoring: {e}")
