@@ -43,8 +43,10 @@ jobs:
 
       - name: Install dependencies
         run: |
+          uv venv
           uv pip install --system pytest pytest-asyncio pytest-cov
-          uv pip install -e . --system
+          # Install the package with database extras
+          uv pip install -e ".[database]" --system
           
           # Install optional performance libraries
           uv pip install --system uvloop orjson cycler matplotlib || true
@@ -53,12 +55,12 @@ jobs:
         run: |
           echo "Configuring MongoDB Atlas connection for testing..."
           # Using secrets for MongoDB connection
-          echo "MONGODB_URI=${{ secrets.MONGODB_URI || 'mongodb+srv://staging-user:staging-password@placeholder-cluster.mongodb.net/quantum_staging?retryWrites=true&w=majority' }}" >> $GITHUB_ENV
+          echo "MONGODB_URI=${{ secrets.MONGODB_URI || vars.MONGODB_URI || 'mongodb+srv://staging-user:staging-password@placeholder-cluster.mongodb.net/quantum_staging?retryWrites=true&w=majority' }}" >> $GITHUB_ENV
           echo "MongoDB connection configured for testing."
 
       - name: Run integration tests
         env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI || 'mongodb+srv://staging-user:staging-password@placeholder-cluster.mongodb.net/quantum_staging?retryWrites=true&w=majority' }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI || vars.MONGODB_URI || 'mongodb+srv://staging-user:staging-password@placeholder-cluster.mongodb.net/quantum_staging?retryWrites=true&w=majority' }}
           PERFORMANCE_MODE: medium
           LOG_LEVEL: verbose
           OPTIMIZATIONS_AVAILABLE: "true"
@@ -169,6 +171,9 @@ jobs:
       - name: Deploy to Heroku
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_APP_NAME: quantum-staging
+          MONGODB_URI: ${{ secrets.MONGODB_URI || vars.MONGODB_URI || 'mongodb+srv://staging-user:staging-password@placeholder-cluster.mongodb.net/quantum_staging?retryWrites=true&w=majority' }}
+          BOT_TOKEN: ${{ secrets.STAGING_BOT_TOKEN }}
         run: |
           # Pull the image from GitHub Container Registry
           docker pull ghcr.io/${{ github.repository }}/staging:latest

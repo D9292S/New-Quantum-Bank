@@ -44,7 +44,7 @@ jobs:
     
     env:
       # MongoDB Atlas connection string with fallback
-      MONGODB_URI: ${{ secrets.MONGODB_URI || 'mongodb+srv://ci-user:ci-password@placeholder-cluster.mongodb.net/quantum_test?retryWrites=true&w=majority' }}
+      MONGODB_URI: ${{ secrets.MONGODB_URI || vars.MONGODB_URI || 'mongodb+srv://ci-user:ci-password@placeholder-cluster.mongodb.net/quantum_test?retryWrites=true&w=majority' }}
       DEVCYCLE_SERVER_SDK_KEY: "${{ secrets.DEVCYCLE_SERVER_SDK_KEY || 'fake-key-for-ci' }}"
       PERFORMANCE_MODE: high
       LOG_LEVEL: INFO
@@ -59,14 +59,17 @@ jobs:
       
       - name: Install UV
         run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          pip install uv
+          uv --version
       
       - name: Install dependencies
         run: |
+          # Create UV virtual environment and install dependencies
+          uv venv
           uv pip install --system pytest pytest-asyncio pytest-cov pytest-benchmark psutil
-          uv pip install -e . --system
-          uv pip install motor
+          # Install the package with database extras
+          uv pip install -e ".[database]" --system
+          
           # Install optional performance libraries when testing performance
           if [ "${{ matrix.test-suite }}" == "performance" ]; then
             uv pip install --system uvloop orjson cycler matplotlib
