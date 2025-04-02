@@ -28,7 +28,7 @@ jobs:
       
       - name: Install linting tools
         run: |
-          uv pip install ruff black isort mypy
+          uv pip install --system ruff black isort mypy
       
       - name: Run linters
         run: |

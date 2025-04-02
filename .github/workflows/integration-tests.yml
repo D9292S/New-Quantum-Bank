@@ -43,7 +43,8 @@ jobs:
       matrix: ${{ fromJson(needs.setup-test-matrix.outputs.test-matrix) }}
     
     env:
-      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      # Using MongoDB Atlas connection string with a fallback for CI
+      MONGODB_URI: ${{ secrets.MONGODB_URI || 'mongodb+srv://ci-user:ci-password@placeholder-cluster.mongodb.net/quantum_test?retryWrites=true&w=majority' }}
       
     steps:
       - uses: actions/checkout@v4
@@ -66,6 +67,21 @@ jobs:
           # Install optional performance libraries when testing performance
           if [ "${{ matrix.test-suite }}" == "performance" ]; then
             uv pip install --system uvloop orjson cycler matplotlib
+          fi
+      
+      - name: Initialize MongoDB
+        if: ${{ matrix.test-suite == 'database' || matrix.test-suite == 'all' }}
+        run: |
+          echo "Configuring MongoDB Atlas connection for testing..."
+          # No need to run mongosh locally as we're connecting to Atlas
+          
+          # Check if we have a real connection string or are using the placeholder
+          if [[ "$MONGODB_URI" == *"placeholder-cluster"* ]]; then
+            echo "Using placeholder MongoDB connection for CI/CD - no actual database operations will be performed"
+            # Create placeholder directory for test artifacts
+            mkdir -p mongo-init
+          else
+            echo "Using provided MongoDB Atlas connection"
           fi
       
       - name: Run database integration tests
