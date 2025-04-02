@@ -69,18 +69,14 @@ jobs:
             uv pip install --system uvloop orjson cycler matplotlib
           fi
       
-      - name: Initialize MongoDB
+      - name: Configure MongoDB Atlas
         if: ${{ matrix.test-suite == 'database' || matrix.test-suite == 'all' }}
         run: |
           echo "Configuring MongoDB Atlas connection for testing..."
-          
-          # Create placeholder directory for test artifacts
-          mkdir -p mongo-init
-          
-          # Create a placeholder init file that would have been used with mongosh
-          echo 'console.log("MongoDB Atlas connection will be used instead of local instance")' > mongo-init/init-mongo.js
-          
-          echo "MongoDB connection configured for testing."
+          # No need to initialize any local MongoDB container
+          # Create test directories if needed
+          mkdir -p mongo-init test-results
+          echo "MongoDB Atlas connection configured for testing."
       
       - name: Run database integration tests
         if: ${{ matrix.test-suite == 'database' || matrix.test-suite == 'all' }}
