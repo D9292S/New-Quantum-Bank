@@ -93,8 +93,8 @@ class BotConfig:
         config = cls(
             # Required settings
             bot_token=os.getenv("BOT_TOKEN", ""),
-            # Database settings
-            mongo_uri=os.getenv("MONGO_URI"),
+            # Database settings - check for MONGODB_URI first, then fall back to MONGO_URI for backwards compatibility
+            mongo_uri=os.getenv("MONGODB_URI") or os.getenv("MONGO_URI"),
             # Bot settings
             activity_status=os.getenv("ACTIVITY_STATUS", "Quantum Bank | /help"),
             debug=os.getenv("DEBUG", "").lower() in ["true", "1", "t", "yes"],

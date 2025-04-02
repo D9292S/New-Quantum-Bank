@@ -28,17 +28,6 @@ jobs:
   integration-tests:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'deploy-to-staging'))
-    services:
-      mongodb:
-        image: mongo:latest
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongo --eval \"db.runCommand({ping:1})\""
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --health-start-period 30s
     steps:
       - uses: actions/checkout@v4
 
@@ -60,29 +49,20 @@ jobs:
           # Install optional performance libraries
           uv pip install --system uvloop orjson cycler matplotlib || true
 
-      - name: Initialize MongoDB
+      - name: Configure MongoDB Atlas
         run: |
-          echo "Configuring MongoDB for testing..."
-          
-          # Create placeholder directory for test artifacts
-          mkdir -p mongo-init
-          
-          # Create a simple initialization script
-          echo '// MongoDB initialization' > mongo-init/init-mongo.js
-          echo 'db = db.getSiblingDB("quantum_test");' >> mongo-init/init-mongo.js
-          echo 'db.createCollection("users");' >> mongo-init/init-mongo.js
-          echo 'db.createCollection("transactions");' >> mongo-init/init-mongo.js
-          
-          # No need to run mongosh - MongoDB will initialize when connected
-          echo "MongoDB configured for testing."
+          echo "Configuring MongoDB Atlas connection for testing..."
+          # Using secrets for MongoDB connection
+          echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> $GITHUB_ENV
+          echo "MongoDB connection configured for testing."
 
       - name: Run integration tests
         env:
-          MONGODB_URI: mongodb://localhost:27017/quantum_test
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
           PERFORMANCE_MODE: medium
           LOG_LEVEL: verbose
           OPTIMIZATIONS_AVAILABLE: "true"
-          DEVCYCLE_SERVER_SDK_KEY: ${{ secrets.DEVCYCLE_SERVER_SDK_KEY || 'test-key' }}
+          DEVCYCLE_SERVER_SDK_KEY: "${{ secrets.DEVCYCLE_SERVER_SDK_KEY || 'test-key' }}"
         run: |
           pytest tests/integration/ -v
           

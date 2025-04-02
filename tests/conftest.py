@@ -9,7 +9,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 # Filter out AsyncMockMixin warnings globally
-warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited", category=RuntimeWarning)
+warnings.filterwarnings("ignore", message="coroutine '.*' was never awaited", 
+                        category=RuntimeWarning)
 warnings.filterwarnings("ignore", category=RuntimeWarning, module="unittest.mock")
 # Suppress sys:1 warning about coroutines
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -25,7 +26,11 @@ def mock_env():
         "os.environ",
         {
             "BOT_TOKEN": "test_token",
-            "MONGODB_URI": "mongodb://localhost:27017",
+            "MONGODB_URI": os.environ.get(
+                "MONGODB_URI",
+                "mongodb+srv://ci-user:ci-password@placeholder-cluster.mongodb.net/"
+                "quantum_test?retryWrites=true&w=majority"
+            ),
             "MONGODB_DB_NAME": "test_db",
             "DEBUG_MODE": "False",
             "PERFORMANCE_MODE": "LOW",
@@ -59,7 +64,12 @@ def mock_bot():
     """Create a mock bot instance for testing."""
     mock = MagicMock()
     mock.config = MagicMock()
-    mock.config.MONGO_URI = "mongodb://localhost:27017"
+    # Use MongoDB Atlas connection from environment or default to a placeholder
+    mock.config.MONGO_URI = os.environ.get(
+        "MONGODB_URI",
+        "mongodb+srv://ci-user:ci-password@placeholder-cluster.mongodb.net/"
+        "quantum_test?retryWrites=true&w=majority"
+    )
     mock.config.MONGO_DB_NAME = "superbot_test"
     # Use get_running_loop instead of get_event_loop
     mock.loop = asyncio.get_running_loop()
@@ -154,4 +164,9 @@ def mock_db_client(mock_mongo_db):
 @pytest.fixture
 def mongo_uri():
     """Get MongoDB URI from environment or use default test value."""
-    return os.environ.get("MONGODB_URI", "mongodb://localhost:27017")
+    # Use MongoDB Atlas connection instead of localhost
+    return os.environ.get(
+        "MONGODB_URI",
+        "mongodb+srv://ci-user:ci-password@placeholder-cluster.mongodb.net/"
+        "quantum_test?retryWrites=true&w=majority"
+    )

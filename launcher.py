@@ -671,17 +671,30 @@ def run_bot() -> int:
         # Create and validate config using both env vars and command-line args
         config = BotConfig.from_env(args)
 
-        # Construct Mongo URI if not provided but components are available
+        # Use MONGODB_URI as primary source, fall back to component construction only if needed
         if not config.mongo_uri:
-            if all(key in os.environ for key in ["MONGO_USER", "MONGO_PASS", "MONGO_HOST"]):
-                config.mongo_uri = "mongodb://{}:{}@{}".format(
+            if "MONGODB_URI" in os.environ:
+                config.mongo_uri = os.environ["MONGODB_URI"]
+                print(
+                    f"{ColoredFormatter.COLORS['GREEN']}Using MongoDB Atlas connection "
+                    f"from MONGODB_URI{ColoredFormatter.COLORS['RESET']}"
+                )
+            elif all(key in os.environ for key in ["MONGO_USER", "MONGO_PASS", "MONGO_HOST"]):
+                # Support for legacy environment variables
+                mongo_db = os.environ.get("MONGO_DB", "quantum_bank")
+                mongo_options = "retryWrites=true&w=majority"
+                
+                # Construct MongoDB Atlas style URI
+                config.mongo_uri = "mongodb+srv://{}:{}@{}/{}?{}".format(
                     quote_plus(os.environ["MONGO_USER"]),
                     quote_plus(os.environ["MONGO_PASS"]),
                     os.environ["MONGO_HOST"],
+                    mongo_db,
+                    mongo_options
                 )
                 print(
-                    f"{ColoredFormatter.COLORS['GREEN']}Constructed MongoDB URI "
-                    f"from individual components{ColoredFormatter.COLORS['RESET']}"
+                    f"{ColoredFormatter.COLORS['YELLOW']}Constructed MongoDB Atlas URI "
+                    f"from individual components (legacy mode){ColoredFormatter.COLORS['RESET']}"
                 )
     except ConfigurationError as e:
         display_error(f"Configuration error: {e}", 1)

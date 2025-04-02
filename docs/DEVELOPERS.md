@@ -7,7 +7,7 @@ This guide provides comprehensive information for developers who want to contrib
 ### Prerequisites
 
 - Python 3.12 or higher
-- MongoDB (locally installed or remote)
+- MongoDB Atlas (or local MongoDB instance for development)
 - Git
 - A Discord Bot Token (for testing)
 
@@ -43,10 +43,12 @@ This guide provides comprehensive information for developers who want to contrib
    Create a `.env` file in the root directory with:
    ```
    BOT_TOKEN=your_discord_bot_token
-   MONGO_URI=mongodb://localhost:27017/quantum_bank_dev
+   MONGODB_URI=mongodb+srv://username:password@your-cluster.mongodb.net/quantum_bank_dev?retryWrites=true&w=majority
    DEBUG=true
    PERFORMANCE_MODE=medium  # Options: low, medium, high
    ```
+
+   > **Note:** For production environments, always use MongoDB Atlas. For local development, you can create a free tier cluster at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
 
 4. **Run the bot in development mode:**
    ```bash
@@ -89,6 +91,52 @@ quantum-bank/
 │   └── test_mongo.py
 └── logs/                  # Log files
 ```
+
+## CI/CD Workflow
+
+The project uses a robust CI/CD pipeline to ensure code quality and streamline deployments.
+
+### Branch Strategy
+
+- **Main Branch** (`main`): The stable codebase branch, used as the base for feature branches.
+- **Feature Branches** (`feature/*`): For developing new features or fixing bugs.
+- **Build Pipelines Branch** (`build-pipelines`): Integration branch for staging deployment.
+- **Heroku Deployment Branch** (`heroku-deployment`): Production deployment branch.
+
+### Workflow Files
+
+Located in `.github/workflows/`:
+
+- **Integration Tests** (`integration-tests.yml`): Runs automated tests on feature branches.
+- **Staging Deployment** (`staging-deploy.yml`): Deploys to staging environment and validates changes.
+- **Production Deployment** (`production-deploy.yml`): Handles advanced production deployment scenarios.
+- **Heroku Deployment** (`heroku-deploy.yml`): Specifically handles Heroku production deployments.
+
+### Development Workflow
+
+1. Create a feature branch from `main`:
+   ```bash
+   git checkout main
+   git pull
+   git checkout -b feature/your-feature-name
+   ```
+
+2. Develop and test your feature locally.
+
+3. Push your feature branch to trigger integration tests:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+4. Create a Pull Request to merge your feature into the `build-pipelines` branch.
+
+5. After approval and merge, your changes will be automatically deployed to the staging environment.
+
+6. After validation in staging, create/update a PR from `build-pipelines` to `heroku-deployment`.
+
+7. Once approved and merged, your changes will be deployed to production.
+
+For more detailed information about the CI/CD process, see [CI_CD_WORKFLOW_GUIDE.md](../CI_CD_WORKFLOW_GUIDE.md).
 
 ## Performance Optimization
 

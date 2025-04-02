@@ -40,7 +40,7 @@ jobs:
           OPTIMIZATIONS_AVAILABLE: "true"
           LOG_LEVEL: quiet
           # Using a default value for the server SDK key if not provided in secrets
-          DEVCYCLE_SERVER_SDK_KEY: ${{ secrets.DEVCYCLE_SERVER_SDK_KEY || 'dummy-test-key-for-ci' }}
+          DEVCYCLE_SERVER_SDK_KEY: ${{ secrets.DEVCYCLE_SERVER_SDK_KEY }}
         run: |
           # Create a placeholder performance tests directory if it doesn't exist
           mkdir -p tests/performance
