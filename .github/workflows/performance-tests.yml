@@ -39,8 +39,8 @@ jobs:
           PERFORMANCE_MODE: high
           OPTIMIZATIONS_AVAILABLE: "true"
           LOG_LEVEL: quiet
-          # Using a default value for the server SDK key if not provided in secrets
-          DEVCYCLE_SERVER_SDK_KEY: ${{ secrets.DEVCYCLE_SERVER_SDK_KEY }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI || 'mongodb+srv://ci-user:ci-password@placeholder-cluster.mongodb.net/quantum_test?retryWrites=true&w=majority' }}
+          DEVCYCLE_SERVER_SDK_KEY: ${{ secrets.DEVCYCLE_SERVER_SDK_KEY || 'dvc_server_fake_key_for_ci_tests' }}
         run: |
           # Create a placeholder performance tests directory if it doesn't exist
           mkdir -p tests/performance

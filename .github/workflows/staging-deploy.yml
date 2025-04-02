@@ -53,12 +53,12 @@ jobs:
         run: |
           echo "Configuring MongoDB Atlas connection for testing..."
           # Using secrets for MongoDB connection
-          echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> $GITHUB_ENV
+          echo "MONGODB_URI=${{ secrets.MONGODB_URI || 'mongodb+srv://staging-user:staging-password@placeholder-cluster.mongodb.net/quantum_staging?retryWrites=true&w=majority' }}" >> $GITHUB_ENV
           echo "MongoDB connection configured for testing."
 
       - name: Run integration tests
         env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI || 'mongodb+srv://staging-user:staging-password@placeholder-cluster.mongodb.net/quantum_staging?retryWrites=true&w=majority' }}
           PERFORMANCE_MODE: medium
           LOG_LEVEL: verbose
           OPTIMIZATIONS_AVAILABLE: "true"

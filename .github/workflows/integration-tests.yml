@@ -44,7 +44,7 @@ jobs:
     
     env:
       # MongoDB Atlas connection string with fallback
-      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_URI: ${{ secrets.MONGODB_URI || 'mongodb+srv://ci-user:ci-password@placeholder-cluster.mongodb.net/quantum_test?retryWrites=true&w=majority' }}
       DEVCYCLE_SERVER_SDK_KEY: "${{ secrets.DEVCYCLE_SERVER_SDK_KEY || 'fake-key-for-ci' }}"
       PERFORMANCE_MODE: high
       LOG_LEVEL: INFO
@@ -161,7 +161,7 @@ jobs:
       
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.test-suite }}
           path: test-results/${{ matrix.test-suite }}
@@ -174,7 +174,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Download test results
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: test-results
       
@@ -209,8 +209,7 @@ jobs:
           fi
       
       - name: Upload test summary
-        if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-summary
           path: summary.md
