@@ -178,6 +178,19 @@ jobs:
             echo "traffic_percentage=100" >> $GITHUB_OUTPUT
           fi
       
+      - name: Ensure Heroku app exists
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          # Check if app exists, if not create it
+          if ! heroku apps:info --app ${{ steps.deploy_type.outputs.app_name }} &> /dev/null; then
+            echo "Creating Heroku app ${{ steps.deploy_type.outputs.app_name }}..."
+            heroku apps:create ${{ steps.deploy_type.outputs.app_name }} --region eu
+            echo "Heroku app created successfully!"
+          else
+            echo "Heroku app ${{ steps.deploy_type.outputs.app_name }} already exists."
+          fi
+      
       - name: Configure Heroku environment
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
