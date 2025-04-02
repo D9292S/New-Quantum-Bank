@@ -103,6 +103,9 @@ jobs:
           # Create test results directory
           mkdir -p test-results test-artifacts
           
+          # Set PYTHONPATH to ensure optimizations module can be found
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          
           # Run performance tests directly using the script
           uv run tools/run_performance_tests.py --quick --output test-artifacts/performance-report.md
           
