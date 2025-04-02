@@ -5,6 +5,7 @@ on:
     branches:
       - develop
       - feature/*
+      - ci/cd
   pull_request:
     branches:
       - develop
@@ -63,6 +64,11 @@ jobs:
         run: |
           uv pip install --system pytest pytest-asyncio pytest-cov pytest-benchmark
           uv pip install -e . --system
+          
+          # Install optional performance libraries when testing performance
+          if [ "${{ matrix.test-suite }}" == "performance" ]; then
+            uv pip install --system uvloop orjson cycler matplotlib
+          fi
       
       - name: Run database integration tests
         if: ${{ matrix.test-suite == 'database' }}
@@ -196,3 +202,35 @@ jobs:
               repo: context.repo.repo,
               body: summary
             });
+            
+  create-heroku-deployment-pr:
+    needs: [integration-tests, test-summary]
+    if: success() && github.event_name == 'push' && github.ref == 'refs/heads/ci/cd'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Create PR to heroku-deployment
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "ci: merge successful integration tests from ci/cd"
+          title: "CI: Merge successful integration tests from ci/cd"
+          body: |
+            ## Integration Tests Summary
+            
+            All integration tests have passed successfully on the `ci/cd` branch.
+            
+            This PR proposes merging the validated changes into the `heroku-deployment` branch for deployment.
+            
+            ### Changes included
+            
+            - Commit: ${{ github.sha }}
+            - Workflow run: ${{ github.run_id }}
+          branch: ci-cd-to-heroku-deployment
+          base: heroku-deployment
+          labels: |
+            automated-pr
+            ci-cd-validated

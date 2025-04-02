@@ -5,6 +5,7 @@ on:
     branches:
       - develop
       - feature/*
+      - ci/cd
   pull_request:
     types: [opened, synchronize, labeled, unlabeled]
     branches:
@@ -55,12 +56,21 @@ jobs:
         run: |
           uv pip install --system pytest pytest-asyncio pytest-cov
           uv pip install -e . --system
+          
+          # Install optional performance libraries
+          uv pip install --system uvloop orjson cycler matplotlib || true
 
       - name: Initialize MongoDB
         run: |
           mongosh < mongo-init/init-mongo.js
 
       - name: Run integration tests
+        env:
+          MONGODB_URI: mongodb://localhost:27017/quantum_test
+          PERFORMANCE_MODE: medium
+          LOG_LEVEL: verbose
+          OPTIMIZATIONS_AVAILABLE: "true"
+          DEVCYCLE_SERVER_SDK_KEY: ${{ secrets.DEVCYCLE_SERVER_SDK_KEY || 'test-key' }}
         run: |
           pytest tests/integration/ -v
           
@@ -70,6 +80,8 @@ jobs:
           cp .env.example .env
           sed -i 's/MONGODB_URI=.*/MONGODB_URI=mongodb:\/\/localhost:27017\/quantum_test/' .env
           sed -i 's/BOT_TOKEN=.*/BOT_TOKEN=mock_token/' .env
+          sed -i 's/PERFORMANCE_MODE=.*/PERFORMANCE_MODE=medium/' .env
+          sed -i 's/OPTIMIZATIONS_AVAILABLE=.*/OPTIMIZATIONS_AVAILABLE=true/' .env
           
           # Run e2e tests with mock Discord API
           python -m tests.e2e.run_tests
@@ -116,6 +128,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             ENVIRONMENT=staging
+            OPTIMIZATIONS_AVAILABLE=true
 
   deploy-staging:
     runs-on: ubuntu-latest
@@ -152,9 +165,11 @@ jobs:
           heroku config:set ENVIRONMENT=staging --app ${{ steps.deploy_type.outputs.app_name }}
           heroku config:set LOG_LEVEL=DEBUG --app ${{ steps.deploy_type.outputs.app_name }}
           heroku config:set PERFORMANCE_MODE=medium --app ${{ steps.deploy_type.outputs.app_name }}
+          heroku config:set OPTIMIZATIONS_AVAILABLE=true --app ${{ steps.deploy_type.outputs.app_name }}
           
           # Set feature flags for staging
           heroku config:set ENABLE_EXPERIMENTAL_FEATURES=true --app ${{ steps.deploy_type.outputs.app_name }}
+          heroku config:set DEVCYCLE_SERVER_SDK_KEY=${{ secrets.DEVCYCLE_SERVER_SDK_KEY }} --app ${{ steps.deploy_type.outputs.app_name }}
           
           # Set traffic percentage for canary deployments
           heroku config:set TRAFFIC_PERCENTAGE=${{ steps.deploy_type.outputs.traffic_percentage }} --app ${{ steps.deploy_type.outputs.app_name }}
@@ -211,3 +226,66 @@ jobs:
         run: |
           echo "Staging deployment failed! Notification would be sent here."
           # Add Discord webhook notification here
+          
+  approve-heroku-deployment-pr:
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: |
+      success() && 
+      github.event_name == 'push' && 
+      github.ref == 'refs/heads/ci/cd'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Find open PR from ci/cd to heroku-deployment
+        id: find_pr
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: 'ci-cd-to-heroku-deployment',
+              base: 'heroku-deployment'
+            });
+            
+            if (prs.data.length > 0) {
+              return {
+                number: prs.data[0].number,
+                url: prs.data[0].html_url
+              };
+            }
+            return null;
+      
+      - name: Comment on PR with staging validation
+        if: steps.find_pr.outputs.result != 'null'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prDetails = JSON.parse('${{ steps.find_pr.outputs.result }}');
+            
+            if (prDetails) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prDetails.number,
+                body: `✅ **Staging Deployment Successful!**
+                
+                Changes have been validated in the staging environment. This PR can now be safely merged to trigger deployment to Heroku production.
+                
+                - Workflow Run: [#${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+                - Staging App: [${{ env.STAGING_APP_NAME }}](https://${{ env.STAGING_APP_NAME }}.herokuapp.com)
+                `
+              });
+              
+              // Add "validated-in-staging" label
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prDetails.number,
+                labels: ['validated-in-staging']
+              });
+            }

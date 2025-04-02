@@ -1,119 +1,111 @@
 name: Performance Tests
+
 on:
   push:
-    branches: [ main ]
-    paths:
-      - 'optimizations/**'
-      - 'launcher.py'
-      - 'tools/**'
-      - 'pyproject.toml'
+    branches:
+      - main
+      - develop
   pull_request:
-    branches: [ main ]
-    paths:
-      - 'optimizations/**'
-      - 'launcher.py'
-      - 'tools/**'
-      - 'pyproject.toml'
-  workflow_dispatch: # Allow manual triggering
+    branches:
+      - main
+  schedule:
+    - cron: '0 0 * * 0'  # Run weekly on Sundays
+  workflow_dispatch:
 
 jobs:
-  test-optimizations:
+  performance-benchmark:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      matrix:
-        python-version: [3.12]
-
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install UV
-      run: |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
-    - name: Install dependencies with UV
-      run: |
-        uv pip install --system psutil matplotlib msgpack expiringdict
-        uv pip install -e . --system
-
-    - name: Verify Memory Management
-      run: |
-        python -c "
-        from optimizations.memory_management import get_memory_manager
-        memory_manager = get_memory_manager()
-        print(f'Memory manager: {memory_manager}')
-        print(f'Current memory usage: {memory_manager.get_memory_usage():.2f}MB')
-        memory_manager.force_collection()
-        print('Memory management working correctly')
-        "
-
-    - name: Verify Query Cache
-      run: |
-        python -c "
-        from optimizations.db_performance import get_query_cache
-        cache = get_query_cache()
-        print(f'Query cache: {cache}')
-        cache.set('test_key', 'test_value')
-        value = cache.get('test_key')
-        assert value == 'test_value', f'Expected test_value, got {value}'
-        print('Query cache working correctly')
-        "
-
-    - name: Run optimization tests
-      run: |
-        python tools/check_optimizations.py
-
-    - name: Run quick performance benchmark
-      run: |
-        python tools/run_performance_tests.py --quick || echo "Performance tests completed with non-zero exit code"
-
-    - name: Generate performance report
-      run: |
-        python -c "
-        import time
-        import json
-        import platform
-        import os
-        import psutil
-        from datetime import datetime
-        
-        # Get system info
-        system_info = {
-            'os': platform.system(),
-            'python': platform.python_version(),
-            'cpu': platform.processor(),
-            'memory': f'{psutil.virtual_memory().total / (1024**3):.2f}GB',
-            'cores': os.cpu_count(),
-            'timestamp': datetime.now().isoformat()
-        }
-        
-        # Create performance report
-        report = {
-            'system': system_info,
-            'test_date': datetime.now().isoformat(),
-            'results': {
-                'memory_management': True,
-                'query_cache': True
-            }
-        }
-        
-        # Save the report
-        os.makedirs('performance_reports', exist_ok=True)
-        with open(f'performance_reports/report_{int(time.time())}.json', 'w') as f:
-            json.dump(report, f, indent=2)
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      
+      - name: Install dependencies
+        run: |
+          uv pip install --system pytest pytest-benchmark pytest-asyncio pytest-cov
+          uv pip install --system uvloop orjson cycler matplotlib || true
+          uv pip install -e . --system
+      
+      - name: Run performance benchmarks
+        env:
+          PERFORMANCE_MODE: high
+          OPTIMIZATIONS_AVAILABLE: "true"
+          LOG_LEVEL: quiet
+          DEVCYCLE_SERVER_SDK_KEY: ${{ secrets.DEVCYCLE_SERVER_SDK_KEY || 'test-key' }}
+        run: |
+          # Run performance benchmarks
+          python -m pytest tests/performance/ --benchmark-json=benchmark.json -v
+      
+      - name: Generate performance report
+        run: |
+          python tools/performance_analysis.py --input benchmark.json --output performance-report.md
+      
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: |
+            benchmark.json
+            performance-report.md
+          retention-days: 90
+          
+      - name: Compare with previous benchmark
+        if: github.event_name == 'pull_request'
+        run: |
+          # Download previous benchmark results
+          git fetch origin ${{ github.base_ref }}
+          git checkout FETCH_HEAD
+          
+          # If previous benchmark exists, run it for comparison
+          if [ -f tests/performance/baseline.json ]; then
+            echo "Comparing with baseline performance benchmark..."
+            python tools/performance_analysis.py --baseline tests/performance/baseline.json --current benchmark.json --output performance-comparison.md
             
-        print('Performance report generated')
-        "
-
-    - name: Upload performance reports
-      uses: actions/upload-artifact@v4
-      with:
-        name: performance-reports
-        path: performance_reports/
-        retention-days: 30 
+            # Calculate regression percentage
+            REGRESSION=$(python -c "
+            import json
+            with open('performance-comparison.md', 'r') as f:
+                content = f.read()
+            print('1' if 'REGRESSION' in content else '0')
+            ")
+            
+            if [ "$REGRESSION" == "1" ]; then
+              echo "::warning::Performance regression detected! See the uploaded artifacts for details."
+            else
+              echo "✅ No performance regression detected."
+            fi
+          else
+            echo "No baseline benchmark found. This will be the first benchmark."
+          fi
+      
+      - name: Comment on PR with performance results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            
+            let body = '## Performance Benchmark Results\n\n';
+            
+            if (fs.existsSync('performance-comparison.md')) {
+              body += fs.readFileSync('performance-comparison.md', 'utf8');
+            } else {
+              body += 'First benchmark run - no comparison available.\n';
+              body += fs.readFileSync('performance-report.md', 'utf8');
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            }); 

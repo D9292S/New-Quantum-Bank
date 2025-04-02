@@ -24,8 +24,55 @@ env:
   DISCORD_API_BASE_URL: https://discord.com/api/v10
 
 jobs:
+  verify-validation:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/heroku-deployment'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Check for validation label on merged PR
+        id: validation_check
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Get the latest commit
+            const commit = context.sha;
+            
+            // Find PRs related to this commit
+            const response = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: commit
+            });
+            
+            // Look for PRs with validation labels
+            let isValidated = false;
+            for (const pr of response.data) {
+              if (pr.base.ref === 'heroku-deployment') {
+                if (pr.labels.some(label => label.name === 'validated-in-staging' || label.name === 'ci-cd-validated')) {
+                  isValidated = true;
+                  console.log(`Found validated PR #${pr.number}: ${pr.title}`);
+                  break;
+                }
+              }
+            }
+            
+            // Output result
+            return isValidated;
+        
+      - name: Abort if not validated
+        if: steps.validation_check.outputs.result != 'true'
+        run: |
+          echo "::error::This commit has not been validated in staging! It must come from a PR with 'validated-in-staging' or 'ci-cd-validated' labels."
+          exit 1
+
   verify-tests:
     runs-on: ubuntu-latest
+    needs: [verify-validation]
+    if: always() && (needs.verify-validation.result == 'success' || needs.verify-validation.result == 'skipped')
     steps:
       - uses: actions/checkout@v4
       
@@ -43,8 +90,16 @@ jobs:
         run: |
           uv pip install --system pytest pytest-asyncio pytest-cov
           uv pip install -e . --system
+          
+          # Install optional performance libraries for high performance mode
+          uv pip install --system uvloop orjson cycler matplotlib || true
       
       - name: Run all tests
+        env:
+          PERFORMANCE_MODE: high
+          OPTIMIZATIONS_AVAILABLE: "true"
+          LOG_LEVEL: verbose
+          DEVCYCLE_SERVER_SDK_KEY: ${{ secrets.DEVCYCLE_SERVER_SDK_KEY || 'test-key' }}
         run: |
           pytest --cov=./ --cov-report=xml -v
       
@@ -127,6 +182,7 @@ jobs:
           build-args: |
             ENVIRONMENT=production
             BUILD_VERSION=${{ github.ref_name }}
+            OPTIMIZATIONS_AVAILABLE=true
       
       - name: Create release artifacts
         run: |
@@ -177,6 +233,9 @@ jobs:
           # Set canary-specific configuration
           heroku config:set ENVIRONMENT=production --app ${{ env.CANARY_APP_NAME }}
           heroku config:set IS_CANARY=true --app ${{ env.CANARY_APP_NAME }}
+          heroku config:set PERFORMANCE_MODE=high --app ${{ env.CANARY_APP_NAME }}
+          heroku config:set OPTIMIZATIONS_AVAILABLE=true --app ${{ env.CANARY_APP_NAME }}
+          heroku config:set DEVCYCLE_SERVER_SDK_KEY=${{ secrets.DEVCYCLE_SERVER_SDK_KEY }} --app ${{ env.CANARY_APP_NAME }}
           
           # Set traffic percentage
           TRAFFIC_PERCENTAGE=${{ github.event.inputs.deploy_percentage || '20' }}
@@ -185,6 +244,7 @@ jobs:
           # Enable monitoring
           heroku config:set ENHANCED_MONITORING=true --app ${{ env.CANARY_APP_NAME }}
           heroku config:set ERROR_REPORTING_LEVEL=verbose --app ${{ env.CANARY_APP_NAME }}
+          heroku config:set LOG_LEVEL=verbose --app ${{ env.CANARY_APP_NAME }}
       
       - name: Deploy to canary
         env:
@@ -259,11 +319,14 @@ jobs:
           heroku config:set ENVIRONMENT=production --app ${{ env.PRODUCTION_APP_NAME }}
           heroku config:set IS_CANARY=false --app ${{ env.PRODUCTION_APP_NAME }}
           heroku config:set TRAFFIC_PERCENTAGE=100 --app ${{ env.PRODUCTION_APP_NAME }}
+          heroku config:set OPTIMIZATIONS_AVAILABLE=true --app ${{ env.PRODUCTION_APP_NAME }}
+          heroku config:set DEVCYCLE_SERVER_SDK_KEY=${{ secrets.DEVCYCLE_SERVER_SDK_KEY }} --app ${{ env.PRODUCTION_APP_NAME }}
           
           # Production performance settings
           heroku config:set PERFORMANCE_MODE=high --app ${{ env.PRODUCTION_APP_NAME }}
           heroku config:set QUERY_CACHE_SIZE=5000 --app ${{ env.PRODUCTION_APP_NAME }}
           heroku config:set QUERY_CACHE_TTL=1800 --app ${{ env.PRODUCTION_APP_NAME }}
+          heroku config:set LOG_LEVEL=normal --app ${{ env.PRODUCTION_APP_NAME }}
       
       - name: Deploy to production
         env:

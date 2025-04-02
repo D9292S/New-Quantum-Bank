@@ -194,6 +194,9 @@ snyk-results.json
 security-scan-results/
 deployment-logs/
 .github/actions/local-cache/
+benchmark.json
+performance-report.md
+performance-comparison.md
 
 # Docker related
 .docker/
