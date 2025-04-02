@@ -35,10 +35,10 @@ jobs:
             echo "matrix={\"test-suite\":[\"${{ github.event.inputs.test_suite }}\"]}" >> $GITHUB_OUTPUT
           fi
 
+  # Running without any container services - using MongoDB Atlas directly
   integration-tests:
     needs: setup-test-matrix
     runs-on: ubuntu-latest
-    # Removed container services completely - using only MongoDB Atlas
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-test-matrix.outputs.test-matrix) }}
