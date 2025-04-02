@@ -60,8 +60,8 @@ fi
 
 # Install dependencies using uv
 echo -e "${YELLOW}Installing dependencies...${NC}"
-uv pip install -e "."
-echo -e "${GREEN}✓ Successfully installed basic dependencies${NC}"
+uv pip sync pyproject.toml
+echo -e "${GREEN}✓ Successfully installed dependencies${NC}"
 
 # Ask if development dependencies should be installed
 echo ""

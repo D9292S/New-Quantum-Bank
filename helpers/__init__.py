@@ -58,6 +58,9 @@ from .exceptions import (
     ValidationError,
 )
 
+# Import feature flags
+from .feature_flags import feature_flag, get_feature_variable, is_feature_enabled, percentage_rollout
+
 # Import rate limiter
 from .rate_limiter import RateLimiter, cooldown, rate_limit
 from .shard_manager import ShardManager
@@ -73,6 +76,11 @@ __all__ = [
     "CacheManager",
     "cached",
     "ShardManager",
+    # Add feature flag utilities
+    "feature_flag",
+    "is_feature_enabled",
+    "get_feature_variable",
+    "percentage_rollout",
     # Add exceptions to __all__
     "AccountAlreadyExistsError",
     "AccountError",

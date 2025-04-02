@@ -3,10 +3,13 @@ import logging
 import os
 import platform
 import time
+from typing import Any
 
 import discord
 import psutil
 from discord.ext import commands
+
+from helpers import feature_flag, is_feature_enabled
 
 COG_METADATA = {
     "name": "utility",
@@ -96,8 +99,29 @@ class Utility(commands.Cog):
             # Format command list
             command_list = ", ".join(f"`/{c.name}`" for c in cmd_list)
             embed.add_field(name=f"{cog_name} Commands", value=command_list, inline=False)
+            
+        # Check if premium features are enabled for this user
+        premium_enabled = is_feature_enabled(self.bot, "premium_features", str(ctx.author.id))
+        
+        # If premium features are enabled, show premium commands section
+        if premium_enabled:
+            embed.add_field(
+                name="✨ Premium Features",
+                value=(
+                    "`/premium_loan` - Apply for premium high-limit loans\n"
+                    "`/investment_portfolio` - Manage your investments\n"
+                    "`/wealth_manager` - Get personalized financial advice\n"
+                    "`/market_analysis` - View market trends and insights"
+                ),
+                inline=False
+            )
+            
+            # Add premium badge to the embed
+            embed.set_footer(text="✨ Premium features enabled for your account")
 
-        embed.set_footer(text="Use /help [command] for details on a specific command")
+        if not premium_enabled:
+            embed.set_footer(text="Use /help [command] for details on a specific command")
+            
         await ctx.respond(embed=embed)
 
     async def _show_command_help(self, ctx, command_name: str):
@@ -614,3 +638,15 @@ class Utility(commands.Cog):
             ),
             inline=False,
         )
+
+    @discord.slash_command(name="investment_portfolio", description="Manage your investment portfolio")
+    @feature_flag("premium_features", default=False)
+    async def investment_portfolio(self, ctx):
+        """Premium feature for investment portfolio management"""
+        await ctx.respond(
+            "🚀 Welcome to your premium investment portfolio! This feature is available because you have access to premium features.",
+            ephemeral=True
+        )
+        
+        # The rest of the investment portfolio command would go here
+        # This demonstrates how the feature_flag decorator prevents execution for users who don't have the flag enabled

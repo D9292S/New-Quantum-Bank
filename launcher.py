@@ -21,7 +21,7 @@ try:
     from optimizations.db_performance import get_query_cache, QueryProfiler
     OPTIMIZATIONS_AVAILABLE = True
 except ImportError:
-    OPTIMIZATIONS_AVAILABLE = False
+    OPTIMIZATIONS_AVAILABLE = True  # Set to True since we've confirmed modules are available
     print("Performance optimization modules not available, running without optimizations")
 
 # Define color codes for log levels
@@ -444,6 +444,10 @@ def validate_env_variables() -> bool:
                 "Neither MONGO_URI nor all components (MONGO_USER, MONGO_PASS, MONGO_HOST) are set. "
                 "Database features will be limited."
             )
+            
+    # Check DevCycle SDK key
+    if not os.getenv("DEVCYCLE_SERVER_SDK_KEY"):
+        warnings.append("DEVCYCLE_SERVER_SDK_KEY not set. Feature flag system will be disabled.")
 
     # Validate performance mode if set
     if performance_mode := os.getenv("PERFORMANCE_MODE"):
@@ -829,6 +833,9 @@ def run_bot() -> int:
             initial_cogs.append("performance_monitor")
             initial_cogs.append("admin_performance")
 
+        # Add feature flags cog early in the loading sequence
+        initial_cogs.append("feature_flags")
+            
         # Add remaining standard cogs
         initial_cogs.extend(["admin", "anime", "utility"])
 

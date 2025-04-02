@@ -117,6 +117,44 @@ Quantum Superbot is a powerful multi-purpose Discord bot featuring advanced comm
    uv run run-debug
    ```
 
+## Package Management with UV
+
+This project uses [UV](https://github.com/astral-sh/uv) for fast, reliable Python package management.
+
+### Common UV Commands
+
+```bash
+# Create a new virtual environment
+uv venv
+
+# Install packages
+uv pip install [package-name]
+
+# Generate lock file and install packages from pyproject.toml
+uv pip sync pyproject.toml
+
+# Update a package and update the lock file
+uv pip install --upgrade [package-name]
+
+# Uninstall a package
+uv pip uninstall [package-name]
+```
+
+### Dependency Management Best Practices
+
+1. Always use UV for installing or updating packages
+2. Use `uv pip sync pyproject.toml` to generate/update the lock file and install dependencies
+3. When deploying, use `uv pip sync pyproject.toml` for consistent environments
+4. Define all project dependencies in pyproject.toml
+
+### Troubleshooting Package Issues
+
+If you experience issues with package dependencies:
+
+1. Ensure UV is properly installed (`uv --version`)
+2. Try reinstalling with `uv pip sync pyproject.toml` to use the lock file
+3. If all else fails, create a fresh environment: `uv venv --force`
+
 ## Available Commands
 
 The project includes several useful commands:
@@ -311,51 +349,6 @@ For full license terms, see the [LICENSE](LICENSE) file.
 - [Pycord](https://github.com/Pycord-Development/pycord)
 - [Motor](https://github.com/mongodb/motor)
 - All contributors who have helped to improve this project
-
-## Advanced Package Management
-
-This project uses the [uv](https://github.com/astral-sh/uv) package manager for fast, reliable Python dependency management. We provide several tools to make package management easier:
-
-### Using the UV Tool
-
-The project includes a convenient wrapper for common uv operations. On Windows, use `uv.bat`; on Unix systems, use `./uv.sh`:
-
-```bash
-# Update dependencies to latest compatible versions
-./uv.sh update
-
-# Clean the environment and rebuild from scratch
-./uv.sh clean --dev
-
-# Add a new package
-./uv.sh add requests
-
-# Add a development dependency
-./uv.sh add --dev black
-
-# Remove a package
-./uv.sh remove requests
-
-# List installed packages
-./uv.sh list
-
-# Check for outdated packages and compatibility issues
-./uv.sh check
-```
-
-### Verifying Your Environment
-
-To check if your environment is correctly set up for running the bot with Python 3.12+:
-
-```bash
-python scripts/check_environment.py
-```
-
-This will verify:
-- Python version is 3.12+
-- UV is installed and working
-- Required system packages are available
-- Project dependencies are correctly configured
 
 ## Performance Optimizations
 

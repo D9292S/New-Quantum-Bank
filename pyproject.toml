@@ -20,170 +20,105 @@ classifiers = [
 ]
 
 dependencies = [
+    # Core dependencies - minimum required to run the bot
     "py-cord>=2.0.0,<3.0.0",
-    "motor>=3.0.0,<4.0.0",
-    "pymongo>=4.0.0,<5.0.0",
     "python-dotenv>=0.19.0,<2.0.0",
-    "python-dateutil>=2.8.2,<3.0.0",
     "asyncio>=3.4.3,<4.0.0",
     "colorama>=0.4.4,<1.0.0",
-    "orjson>=3.6.0,<4.0.0",
-    "dnspython>=2.1.0,<3.0.0",
-    "aiohttp>=3.8.0,<4.0.0",
-    "cryptography>=44.0.0,<45.0.0",
-    "PyNaCl>=1.5.0,<2.0.0",
     "typing-extensions>=4.0.0,<5.0.0",
-    "pytz>=2021.3,<2026.0",
-    "psutil>=5.9.0,<8.0.0",
-    "expiringdict>=1.2.2,<2.0.0",
-    "mongomock>=4.1.2,<5.0.0",
-    "requests>=2.28.0,<3.0.0",
-    "matplotlib>=3.5.0,<4.0.0",
-    "msgpack>=1.0.3,<2.0.0",
-    "Pillow>=10.0.0,<11.0.0",
+    "yarl",
+    "aiohappyeyeballs",
+    "aiosignal", 
+    "attrs",
+    "frozenlist",
 ]
 
 [project.optional-dependencies]
-high-performance = [
-    'uvloop>=0.16.0,<0.21.0; platform_system != "Windows"',
+# Database components
+database = [
+    "motor>=3.0.0,<4.0.0",
+    "pymongo>=4.0.0,<5.0.0",
+    "dnspython>=2.1.0,<3.0.0",
 ]
 
-production = [
-    "psutil>=5.9.5,<6.0.0",
-    "memory-profiler>=0.61.0,<1.0.0",
-    "aiomonitor>=0.4.5,<1.0.0",
-    "colorlog>=6.7.0,<7.0.0",
-    'uvloop>=0.17.0,<0.21.0; platform_system != "Windows"',
-    "aiodns>=3.0.0,<4.0.0",
-    "cchardet>=2.1.7,<3.0.0",
-    'pycurl>=7.45.2,<8.0.0; platform_system != "Windows"',
-    "quantum-superbot[high-performance]",
+# Monitoring and performance optimization components
+monitoring = [
+    "psutil>=5.9.0,<8.0.0",
+    "prometheus-client>=0.16.0,<1.0.0",
+    "statsd>=4.0.0,<5.0.0",
+    "expiringdict>=1.2.2,<2.0.0",
+    "cycler>=0.11.0,<1.0.0",  # Required by performance_monitor cog
 ]
 
+# Feature flags and experimental features
+features = [
+    "devcycle-python-server-sdk>=3.11.0,<4.0.0",
+]
+
+# Data processing and visualization
+datascience = [
+    "numpy>=1.20.0,<2.0.0",
+    "pandas>=1.3.0,<2.0.0",
+    "matplotlib>=3.5.0,<4.0.0",
+]
+
+# Performance optimizations
+optimizations = [
+    "orjson>=3.6.0,<4.0.0",
+    "msgpack>=1.0.3,<2.0.0",
+    "uvloop>=0.16.0,<0.17.0;platform_system!='Windows'",  # Used in high performance mode on non-Windows
+]
+
+# Media processing
+media = [
+    "Pillow>=10.0.0,<11.0.0",
+]
+
+# Security components
+security = [
+    "cryptography>=44.0.0,<45.0.0",
+    "PyNaCl>=1.5.0,<2.0.0",
+]
+
+# Testing tools
 testing = [
-    "pytest>=7.0.0,<9.0.0",
-    "pytest-asyncio>=0.20.0,<0.27.0",
-    "pytest-cov>=4.0.0,<7.0.0",
+    "mongomock>=4.1.2,<5.0.0",
+    "pytest>=7.0.0,<8.0.0",
+    "pytest-asyncio>=0.17.0,<0.18.0",
 ]
 
-development = [
-    "black>=23.0.0,<26.0.0",
-    "ruff>=0.0.280,<0.12.0",
-    "bandit>=1.7.5,<2.0.0",
-    "pre-commit>=3.3.0,<5.0.0",
-    "mypy>=1.0.0,<2.0.0",
-    "motor-stubs>=1.7.1,<2.0.0",
-]
-
-docs = [
-    "sphinx>=6.0.0,<9.0.0",
-    "sphinx-rtd-theme>=1.2.0,<4.0.0",
-    "myst-parser>=1.0.0,<5.0.0",
-]
-
+# Development tools
 dev = [
-    "quantum-superbot[testing,development,docs]",
+    "black>=23.0.0,<25.0.0",
+    "flake8>=6.0.0,<7.0.0",
+    "ruff>=0.0.270,<1.0.0",
+    "isort>=5.10.0,<6.0.0",
+    "mypy>=1.0.0,<2.0.0",
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["."]
-
-[tool.ruff]
-target-version = "py312"
-line-length = 120
-extend-exclude = [".venv"]
-
-[tool.ruff.lint]
-select = [
-    "E",  # pycodestyle errors
-    "F",  # pyflakes
-    "I",  # isort
-    "W",  # pycodestyle warnings
-    "C90", # mccabe complexity
-    "N",  # pep8-naming
-    "B",  # flake8-bugbear
-    "UP",  # pyupgrade
-    # "ANN", # type annotations - temporarily removed
-]
-ignore = ["E203", "E722", "B007", "UP036", "C901", "E501", "B904", "UP038", "N806"]
-fixable = ["A", "B", "C", "D", "E", "F", "I", "UP"]
-unfixable = []
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401"]
-"tests/*" = ["E501", "ANN"]
-
-[tool.ruff.lint.isort]
-known-third-party = ["discord", "py_cord", "motor", "pymongo", "pytest"]
-known-first-party = ["cogs", "helpers", "utils"]
-
-[tool.ruff.lint.mccabe]
-max-complexity = 15
-
-[tool.black]
-line-length = 120
-target-version = ["py312"]
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-)/
-'''
-
-[tool.mypy]
-python_version = "3.12"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-
-[[tool.mypy.overrides]]
-module = ["py_cord.*", "motor.*", "pymongo.*"]
-ignore_missing_imports = true
-
-# Additional override for mongomock since we're removing types-pymongo dependency
-[[tool.mypy.overrides]]
-module = ["mongomock.*"]
-ignore_missing_imports = true
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = "test_*.py"
-asyncio_mode = "auto"
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests that require external services",
-    "unit: marks unit tests",
-    "bot: marks tests that require a bot instance",
-    "database: marks tests that require a database connection",
+# Full installation with all dependencies
+all = [
+    "quantum-superbot[database,monitoring,features,datascience,optimizations,media,security,testing,dev]"
 ]
 
-[tool.bandit]
-exclude_dirs = ["tests", ".venv", "venv"]
-skips = [
-    "B311",  # Skip warning about random, we're using it for non-security purposes
-    "B110",  # Skip try-except-pass warnings in specific cases
-    "B324",  # Skip MD5 usage warning for non-security functionality (cache key generation)
-    "B404",  # Skip subprocess import warning (necessary for cluster manager)
-    "B603",  # Skip subprocess call warning (necessary for cluster manager)
-    "B606",  # Skip subprocess no shell warning (necessary for cluster manager)
-    "B301",  # Skip pickle warnings during our transition to JSON
-    "B113",  # Skip request timeout warnings - will be addressed separately
+# Production deployment setup
+production = [
+    "quantum-superbot[database,monitoring,features,optimizations,media,security]"
+]
+
+# High-performance setup for containerized environments
+high-performance = [
+    "quantum-superbot[database,monitoring,features,optimizations,security]",
+    "uvloop>=0.16.0,<0.17.0;platform_system!='Windows'",
+    "orjson>=3.6.0,<4.0.0"
 ]
 
 [project.scripts]
 quantum-superbot = "launcher:run_bot"
+
+# UV package manager configuration
+[tool.uv]
+# Package management settings
+pip = {upgrade = true}
+# Configure advanced options
+cache-dir = ".uv-cache"

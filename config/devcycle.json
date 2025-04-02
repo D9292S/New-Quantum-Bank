@@ -1,0 +1,13 @@
+{
+  "feature_descriptions": {
+    "premium_features": "Premium features for selected users including enhanced banking services, higher limits, and exclusive tools.",
+    "premium_loans": "High-limit loans with lower interest rates for users with excellent credit scores.",
+    "investment_portfolio": "Advanced investment management features for premium users.",
+    "wealth_manager": "Personalized financial advice and wealth management recommendations.",
+    "market_analysis": "Real-time market trend analysis and investment opportunities.",
+    "custom_cards": "Customizable virtual credit and debit card designs for premium users.",
+    "early_access": "Early access to new features before general release.",
+    "beta_features": "Experimental features in beta testing phase.",
+    "new_dashboard": "New interactive dashboard with enhanced visualization and features."
+  }
+} 

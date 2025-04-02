@@ -54,9 +54,16 @@ if %ERRORLEVEL% NEQ 0 (
     :: Check if installation was successful
     where uv >NUL 2>NUL
     if %ERRORLEVEL% NEQ 0 (
-        echo [31mFailed to install uv. Please install it manually:[0m
-        echo [33mVisit: https://github.com/astral-sh/uv/blob/main/README.md#installation[0m
-        exit /b 1
+        if exist %USERPROFILE%\.uv\bin\uv.exe set PATH=%PATH%;%USERPROFILE%\.uv\bin
+        if exist %USERPROFILE%\.cargo\bin\uv.exe set PATH=%PATH%;%USERPROFILE%\.cargo\bin
+        
+        :: Check again after adding common paths
+        where uv >NUL 2>NUL
+        if %ERRORLEVEL% NEQ 0 (
+            echo [31mFailed to install uv. Please install it manually:[0m
+            echo [33mVisit: https://github.com/astral-sh/uv/blob/main/README.md#installation[0m
+            exit /b 1
+        )
     )
     
     echo [32m✓ uv installed successfully[0m
@@ -82,8 +89,21 @@ if %ERRORLEVEL% NEQ 0 (
 
 :: Install dependencies using uv
 echo [33mInstalling dependencies...[0m
-uv pip install -e "."
-echo [32m✓ Successfully installed basic dependencies[0m
+uv pip sync pyproject.toml
+if %ERRORLEVEL% NEQ 0 (
+    echo [31mFailed to install dependencies[0m
+    exit /b 1
+)
+echo [32m✓ Successfully installed dependencies[0m
+
+:: Install DevCycle SDK
+echo [33mInstalling DevCycle SDK...[0m
+uv pip install devcycle-python-server-sdk
+if %ERRORLEVEL% NEQ 0 (
+    echo [31mFailed to install DevCycle SDK. Feature flags may not work properly.[0m
+) else (
+    echo [32m✓ Successfully installed DevCycle SDK[0m
+)
 
 :: Ask if development dependencies should be installed
 echo.
@@ -92,7 +112,11 @@ set /p installDev="Would you like to install development dependencies? (y/n): "
 if /i "%installDev%"=="y" (
     echo [33mInstalling development dependencies...[0m
     uv pip install -e ".[development]"
-    echo [32m✓ Successfully installed development dependencies[0m
+    if %ERRORLEVEL% NEQ 0 (
+        echo [31mFailed to install development dependencies[0m
+    ) else (
+        echo [32m✓ Successfully installed development dependencies[0m
+    )
 )
 
 echo.

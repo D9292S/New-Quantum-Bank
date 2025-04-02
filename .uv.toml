@@ -8,7 +8,7 @@ strict-resolver = true
 # Enable modern dependency management features
 advanced-lockfile = true
 # Cache settings for better performance
-cache-dir = ".cache/uv"
+cache-dir = ".uv-cache"
 
 [tool.uv.sources]
 # Use the official PyPI index as the primary source

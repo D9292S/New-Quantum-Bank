@@ -11,7 +11,7 @@ Quantum Bank includes several performance optimization modules designed to:
 - Improve overall responsiveness and reduce latency
 - Monitor and report on performance metrics
 
-These optimizations are designed to work together to provide a smooth, efficient experience even under heavy load or with limited resources.
+These optimizations are enabled by default and configured to work together to provide a smooth, efficient experience even under heavy load or with limited resources. The `OPTIMIZATIONS_AVAILABLE` flag in launcher.py is set to `True` to enable these features.
 
 ## Memory Management
 

@@ -35,7 +35,9 @@ env/
 
 # Package managers
 .uv/
+.uv-cache/
 # uv.lock is tracked for dependency consistency
+.cache/uv/
 
 # IDE specific files
 .idea/

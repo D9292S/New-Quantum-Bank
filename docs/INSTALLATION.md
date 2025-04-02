@@ -12,7 +12,7 @@ This guide provides detailed instructions for installing and setting up the Quan
 
 ### Automated Setup (Recommended)
 
-We provide automated setup scripts for both Unix-based systems (Linux/macOS) and Windows.
+We provide automated setup scripts for both Unix-based systems (Linux/macOS) and Windows. These scripts utilize the UV package manager for significantly faster installations (10-100x faster than pip).
 
 #### For Linux/macOS
 
@@ -25,7 +25,7 @@ We provide automated setup scripts for both Unix-based systems (Linux/macOS) and
    - Check if Python 3.12+ is installed
    - Install the uv package manager if needed
    - Create a virtual environment
-   - Install all required dependencies
+   - Install all required dependencies using UV's efficient resolver
 
 #### For Windows
 
