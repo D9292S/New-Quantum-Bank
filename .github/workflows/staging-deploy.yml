@@ -20,6 +20,12 @@ on:
           - standard
           - canary
 
+# Add explicit permissions for GitHub token
+permissions:
+  contents: read
+  packages: write
+  actions: read
+
 env:
   STAGING_APP_NAME: quantum-superbot-staging
   CANARY_APP_NAME: quantum-superbot-canary
