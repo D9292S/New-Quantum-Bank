@@ -28,7 +28,7 @@ class TestBotBasics(unittest.TestCase):
             "os.environ",
             {
                 "BOT_TOKEN": "test_token",
-                "MONGODB_URI": "mongodb://localhost:27017",
+                "MONGODB_URI": "mongodb+srv://ci-user:ci-password@placeholder-cluster.mongodb.net/quantum_test?retryWrites=true&w=majority",
                 "DEBUG": "False",
             },
         )
@@ -57,7 +57,7 @@ class TestBotBasics(unittest.TestCase):
         # Create a test config
         self.test_config = BotConfig(
             bot_token="test_token",
-            mongo_uri="mongodb://localhost:27017",
+            mongo_uri="mongodb+srv://ci-user:ci-password@placeholder-cluster.mongodb.net/quantum_test?retryWrites=true&w=majority",
             activity_status="Testing",
             debug=False,
             mal_client_id=None,

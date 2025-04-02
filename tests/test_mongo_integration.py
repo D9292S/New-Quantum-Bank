@@ -26,7 +26,7 @@ async def mock_bot():
     """Create a mock bot instance"""
     mock_bot = AsyncMock()
     # Create a config attribute with MONGO_URI
-    mock_bot.config = type("Config", (), {"MONGO_URI": "mongodb://localhost:27017/test_db"})
+    mock_bot.config = type("Config", (), {"MONGO_URI": "mongodb+srv://ci-user:ci-password@placeholder-cluster.mongodb.net/quantum_test?retryWrites=true&w=majority/test_db"})
     mock_bot.loop = MagicMock()
     mock_bot.loop.create_task = MagicMock()
     return mock_bot
