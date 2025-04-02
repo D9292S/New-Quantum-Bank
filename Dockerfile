@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     git \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install UV using pip with --user flag
