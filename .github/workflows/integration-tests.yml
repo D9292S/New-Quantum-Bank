@@ -38,6 +38,7 @@ jobs:
   integration-tests:
     needs: setup-test-matrix
     runs-on: ubuntu-latest
+    # Removed container services completely - using only MongoDB Atlas
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-test-matrix.outputs.test-matrix) }}
