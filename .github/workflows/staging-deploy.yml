@@ -69,41 +69,37 @@ jobs:
           pytest tests/integration/ -v
           
       - name: Run end-to-end tests
-        shell: pwsh
         run: |
           # Setup test environment
-          Copy-Item .env.example .env
+          cp .env.example .env
           
-          # Use PowerShell to edit environment variables
-          $envContent = Get-Content .env -Raw
-          $mongodbUri = "${{ secrets.MONGODB_URI || vars.MONGODB_URI || 'mongodb+srv://ci-user:ci-password@placeholder-cluster.mongodb.net/quantum_test?retryWrites=true&w=majority' }}"
-          $envContent = $envContent -replace 'MONGODB_URI=.*', "MONGODB_URI=$mongodbUri"
-          $envContent = $envContent -replace 'BOT_TOKEN=.*', 'BOT_TOKEN=mock_token'
-          $envContent = $envContent -replace 'PERFORMANCE_MODE=.*', 'PERFORMANCE_MODE=medium'
-          $envContent = $envContent -replace 'OPTIMIZATIONS_AVAILABLE=.*', 'OPTIMIZATIONS_AVAILABLE=true'
-          Set-Content .env -Value $envContent
+          # Replace MongoDB URI with Atlas URI
+          MONGODB_URI="${{ secrets.MONGODB_URI || vars.MONGODB_URI || 'mongodb+srv://ci-user:ci-password@placeholder-cluster.mongodb.net/quantum_test?retryWrites=true&w=majority' }}"
+          # Use sed with different delimiters to avoid issues with slashes in the URI
+          sed -i "s|MONGODB_URI=.*|MONGODB_URI=${MONGODB_URI}|" .env
+          sed -i 's/BOT_TOKEN=.*/BOT_TOKEN=mock_token/' .env
+          sed -i 's/PERFORMANCE_MODE=.*/PERFORMANCE_MODE=medium/' .env
+          sed -i 's/OPTIMIZATIONS_AVAILABLE=.*/OPTIMIZATIONS_AVAILABLE=true/' .env
           
           # Check if e2e test module exists before running
-          $moduleExists = python -c "import importlib.util; print('True' if importlib.util.find_spec('tests.e2e') is not None else 'False')"
-          if ($moduleExists -eq "True") {
-            Write-Host "Running end-to-end tests..."
+          if python -c "import importlib.util; print('True' if importlib.util.find_spec('tests.e2e') is not None else 'False')" | grep -q "True"; then
+            echo "Running end-to-end tests..."
             python -m tests.e2e.run_tests
-          } else {
-            Write-Host "End-to-end test module not found. Creating placeholder results."
+          else
+            echo "End-to-end test module not found. Creating placeholder results."
             # Create placeholder test results
-            New-Item -Path test-results/e2e -ItemType Directory -Force
-            $timestamp = Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ"
-            $json = '{
+            mkdir -p test-results/e2e
+            timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            echo '{
               "tests": 0,
               "passed": 0,
               "failed": 0,
               "skipped": 0,
               "duration": 0.0,
-              "timestamp": "' + $timestamp + '",
+              "timestamp": "'${timestamp}'",
               "message": "End-to-end tests not implemented yet."
-            }'
-            Set-Content -Path test-results/e2e/results.json -Value $json
-          }
+            }' > test-results/e2e/results.json
+          fi
           
       - name: Upload test results
         uses: actions/upload-artifact@v4
