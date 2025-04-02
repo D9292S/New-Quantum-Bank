@@ -15,11 +15,17 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 class TestMongoDBConnection(unittest.TestCase):
     """Integration tests for MongoDB connection functionality."""
 
+    # Use MongoDB Atlas URI
+    ATLAS_URI = "mongodb+srv://ci-user:ci-password@placeholder-cluster.mongodb.net/quantum_test?retryWrites=true&w=majority"
+
     def setUp(self):
         """Set up test environment."""
+        # Use Atlas URI from environment or a default placeholder
+        self.mongodb_uri = os.environ.get("MONGODB_URI", self.ATLAS_URI)
+        
         # Mock environment variables
         self.env_patcher = mock.patch.dict(
-            "os.environ", {"MONGODB_URI": "mongodb://localhost:27017", "MONGODB_DB_NAME": "test_db"}
+            "os.environ", {"MONGODB_URI": self.mongodb_uri, "MONGODB_DB_NAME": "test_db"}
         )
         self.env_patcher.start()
 
@@ -31,7 +37,8 @@ class TestMongoDBConnection(unittest.TestCase):
         # Create a mock bot with config
         self.mock_bot = mock.MagicMock()
         self.mock_bot.config = mock.MagicMock()
-        self.mock_bot.config.MONGO_URI = "mongodb://localhost:27017"
+        self.mock_bot.config.MONGO_URI = self.mongodb_uri
+        self.mock_bot.config.mongo_uri = self.mongodb_uri
 
         # Create a new event loop for testing (not get_event_loop)
         self.loop = asyncio.new_event_loop()
@@ -58,7 +65,7 @@ class TestMongoDBConnection(unittest.TestCase):
     def test_mongodb_connection(self):
         """Test actual connection to MongoDB (requires running MongoDB instance)."""
         # This test is skipped by default because it requires a real MongoDB instance
-        # Remove the skip decorator to run this test with a local MongoDB
+        # Remove the skip decorator to run this test with a real MongoDB Atlas instance
 
         async def run_test():
             mongodb = self.mongo_class(self.mock_bot)
@@ -73,10 +80,11 @@ class TestMongoDBConnection(unittest.TestCase):
     def test_mongodb_uri_parsing(self):
         """Test that MongoDB URI is parsed correctly."""
         # We'll test the class instantiation with different URI formats
+        # Using valid Atlas-compatible URIs instead of localhost
         test_cases = [
-            "mongodb://localhost:27017",
-            "mongodb://user:pass@localhost:27017",
-            "mongodb+srv://user:pass@cluster.example.com",
+            self.mongodb_uri,  # Use the configured Atlas URI
+            "mongodb+srv://user:pass@cluster.example.com/dbname?retryWrites=true&w=majority",
+            "mongodb+srv://user:pass@cluster.mongodb.net/?retryWrites=true&w=majority",
         ]
 
         for uri in test_cases:
