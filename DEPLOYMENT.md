@@ -1,6 +1,14 @@
 # Deploying Quantum Bank Bot to Heroku
 
-This guide explains how to deploy the Quantum Bank Discord bot to Heroku using the GitHub Actions workflow included in this repository.
+This guide explains how to deploy the Quantum Bank Discord bot to Heroku using the GitHub Actions workflows included in this repository.
+
+## Branch Strategy Overview
+
+The project uses the following branch strategy for deployments:
+
+1. **Feature Branches** (`feature/*`): For developing new features
+2. **Build Pipelines Branch** (`build-pipelines`): For staging deployment and validation
+3. **Heroku Deployment Branch** (`heroku-deployment`): For production deployment to Heroku
 
 ## Prerequisites
 
@@ -56,13 +64,30 @@ heroku config:set ACTIVITY_STATUS="Quantum Bank | /help" -a your-app-name
 
 ### 4. Deploy Using GitHub Actions
 
-The deployment workflow will trigger automatically when you push to the `heroku-deployment` branch. You can also trigger it manually:
+The deployment workflow follows this process:
+
+1. **Feature Development**:
+   - Develop features in `feature/*` branches
+   - Push to trigger integration tests
+
+2. **Staging Deployment**:
+   - Merge feature branches to `build-pipelines`
+   - This triggers the staging deployment workflow
+   - Changes are deployed to staging and validated
+
+3. **Production Deployment**:
+   - Create/update a PR from `build-pipelines` to `heroku-deployment`
+   - After validation, merge the PR
+   - This triggers the Heroku deployment workflow
+   - Your bot is deployed to production
+
+You can also trigger the workflow manually:
 
 1. Go to your repository on GitHub
 2. Navigate to Actions
 3. Select "Deploy to Heroku" workflow
 4. Click "Run workflow"
-5. Choose "heroku-deployment" branch
+5. Choose the appropriate branch
 6. Click "Run workflow"
 
 ### 5. Monitor the Deployment
@@ -128,6 +153,22 @@ Heroku provides metrics for your application. To view metrics:
 ### Continuous Deployment
 
 The GitHub Action workflow in `.github/workflows/heroku-deploy.yml` automatically deploys your bot whenever you push to the `heroku-deployment` branch.
+
+## Canary Deployments
+
+For more controlled rollouts, we support canary deployments:
+
+1. Use the staging workflow with canary option:
+   ```bash
+   gh workflow run staging-deploy.yml -f deploy_type=canary
+   ```
+
+2. Or use the production workflow with percentage control:
+   ```bash
+   gh workflow run production-deploy.yml -f deploy_percentage=20
+   ```
+
+See [CANARY_DEPLOYMENT.md](CANARY_DEPLOYMENT.md) for detailed information.
 
 ## Troubleshooting
 

@@ -32,31 +32,35 @@ By participating in this project, you agree to uphold our Code of Conduct, which
 3. Write your code following the style guidelines below
 4. Add or update tests as necessary
 5. Update documentation as necessary
-6. Submit a pull request to the `main` branch
+6. Submit a pull request to the appropriate branch (see Branching Strategy below)
 
 ## Branching Strategy
 
-We follow a simplified version of GitFlow for this project:
+We follow a CI/CD-focused branching strategy for this project:
 
-- `main` - The production branch. All releases are tagged from this branch.
-- `develop` - The main development branch. Features and fixes are merged here first.
-- `feature/*` - Feature branches created from `develop`.
-- `fix/*` - Bugfix branches created from `develop` or `main` (for hotfixes).
-- `release/*` - Release preparation branches.
+- `main` - The stable codebase branch. Used as the base for feature branches.
+- `feature/*` - Feature branches created from `main` for new development.
+- `build-pipelines` - The integration branch for staging deployment. Features are merged here first.
+- `heroku-deployment` - The production deployment branch. Changes are deployed to Heroku from this branch.
 
 ### Branch Naming Convention
 
 - Feature branches: `feature/short-description` or `feature/issue-number-description`
 - Bug fix branches: `fix/short-description` or `fix/issue-number-description`
 - Release branches: `release/vX.Y.Z`
-- Hotfix branches: `hotfix/vX.Y.Z` or `hotfix/critical-issue-description`
+- Hotfix branches: `hotfix/critical-issue-description`
 
 ### Workflow
 
-1. Create your branch from `develop` (or `main` for hotfixes).
+1. Create your feature branch from `main`.
 2. Develop your feature or fix.
-3. Create a PR to merge back into the appropriate branch.
-4. After review and approval, your PR will be merged.
+3. Create a PR to merge into the `build-pipelines` branch.
+4. After review and approval, your PR will be merged to `build-pipelines`.
+5. The CI/CD pipeline will automatically deploy to staging for testing.
+6. After validation in staging, a PR from `build-pipelines` to `heroku-deployment` will be created.
+7. Once approved, merging to `heroku-deployment` will trigger production deployment.
+
+For more details on the CI/CD process, see [CI_CD_WORKFLOW_GUIDE.md](CI_CD_WORKFLOW_GUIDE.md).
 
 ## Development Setup
 
