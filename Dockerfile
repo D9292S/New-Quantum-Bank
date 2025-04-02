@@ -28,6 +28,9 @@ RUN python -m pip install --user uv && \
 # Verify UV installation
 RUN uv --version
 
+# Copy the entire source code
+COPY . .
+
 # Install dependencies using uv
 RUN UV_SYSTEM_PYTHON=1 uv pip install ".[high-performance]" --system
 
