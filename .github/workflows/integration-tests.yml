@@ -73,16 +73,14 @@ jobs:
         if: ${{ matrix.test-suite == 'database' || matrix.test-suite == 'all' }}
         run: |
           echo "Configuring MongoDB Atlas connection for testing..."
-          # No need to run mongosh locally as we're connecting to Atlas
           
-          # Check if we have a real connection string or are using the placeholder
-          if [[ "$MONGODB_URI" == *"placeholder-cluster"* ]]; then
-            echo "Using placeholder MongoDB connection for CI/CD - no actual database operations will be performed"
-            # Create placeholder directory for test artifacts
-            mkdir -p mongo-init
-          else
-            echo "Using provided MongoDB Atlas connection"
-          fi
+          # Create placeholder directory for test artifacts
+          mkdir -p mongo-init
+          
+          # Create a placeholder init file that would have been used with mongosh
+          echo 'console.log("MongoDB Atlas connection will be used instead of local instance")' > mongo-init/init-mongo.js
+          
+          echo "MongoDB connection configured for testing."
       
       - name: Run database integration tests
         if: ${{ matrix.test-suite == 'database' || matrix.test-suite == 'all' }}
