@@ -69,30 +69,30 @@ jobs:
           fi
       
       - name: Run database integration tests
-        if: ${{ matrix.test-suite == 'database' }}
+        if: ${{ matrix.test-suite == 'database' || matrix.test-suite == 'all' }}
         run: |
           echo "Running database integration tests..."
-          uv python -m pytest tests/integration/test_mongodb_connection.py -v --junitxml=test-results/database-results.xml
+          uv run pytest tests/integration/test_mongodb_connection.py -v --junitxml=test-results/database-results.xml
           
           # Run additional database tests
-          uv python -m pytest tests/integration/database/ -v --junitxml=test-results/database-additional-results.xml
+          uv run pytest tests/integration/database/ -v --junitxml=test-results/database-additional-results.xml
       
       - name: Run API integration tests
-        if: ${{ matrix.test-suite == 'api' }}
+        if: ${{ matrix.test-suite == 'api' || matrix.test-suite == 'all' }}
         run: |
           echo "Running API integration tests..."
           
           # Start a test instance of the bot with mock configuration
-          uv python launcher.py --test-mode --api-only &
+          uv run launcher.py --test-mode --api-only &
           BOT_PID=$!
           
           # Wait for bot to initialize
-          sleep 10
+          sleep 5
           
-          # Run API tests
-          uv python -m pytest tests/integration/api/ -v --junitxml=test-results/api-results.xml
+          # Run API endpoint tests
+          uv run pytest tests/integration/api/ -v --junitxml=test-results/api-results.xml
           
-          # Terminate the bot process
+          # Kill the bot process
           kill $BOT_PID
       
       - name: Run performance tests
@@ -104,7 +104,7 @@ jobs:
           mkdir -p test-results test-artifacts
           
           # Run performance tests directly using the script
-          uv python tools/run_performance_tests.py --quick --output test-artifacts/performance-report.md
+          uv run tools/run_performance_tests.py --quick --output test-artifacts/performance-report.md
           
           # Create a simple JSON output for compatibility with the test summary
           echo '{"benchmarks": [{"name": "performance_test", "stats": {"min": 0, "max": 0, "mean": 0}}]}' > test-results/benchmark.json
