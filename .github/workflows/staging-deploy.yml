@@ -3,13 +3,12 @@ name: Staging Deployment Pipeline
 on:
   push:
     branches:
-      - develop
       - feature/*
-      - ci/cd
+      - build-pipelines
   pull_request:
     types: [opened, synchronize, labeled, unlabeled]
     branches:
-      - develop
+      - main
   workflow_dispatch:
     inputs:
       deploy_type:
@@ -233,11 +232,11 @@ jobs:
     if: |
       success() && 
       github.event_name == 'push' && 
-      github.ref == 'refs/heads/ci/cd'
+      github.ref == 'refs/heads/build-pipelines'
     steps:
       - uses: actions/checkout@v4
       
-      - name: Find open PR from ci/cd to heroku-deployment
+      - name: Find open PR from build-pipelines to heroku-deployment
         id: find_pr
         uses: actions/github-script@v7
         with:
@@ -247,7 +246,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
-              head: 'ci-cd-to-heroku-deployment',
+              head: 'build-pipelines-to-heroku-deployment',
               base: 'heroku-deployment'
             });
             

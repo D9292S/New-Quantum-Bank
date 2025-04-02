@@ -3,12 +3,10 @@ name: Integration Tests
 on:
   push:
     branches:
-      - develop
       - feature/*
-      - ci/cd
+      - build-pipelines
   pull_request:
     branches:
-      - develop
       - main
   workflow_dispatch:
     inputs:
@@ -205,7 +203,7 @@ jobs:
             
   create-heroku-deployment-pr:
     needs: [integration-tests, test-summary]
-    if: success() && github.event_name == 'push' && github.ref == 'refs/heads/ci/cd'
+    if: success() && github.event_name == 'push' && github.ref == 'refs/heads/build-pipelines'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -216,12 +214,12 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "ci: merge successful integration tests from ci/cd"
-          title: "CI: Merge successful integration tests from ci/cd"
+          commit-message: "ci: merge successful integration tests from build-pipelines"
+          title: "CI: Merge successful integration tests from build-pipelines"
           body: |
             ## Integration Tests Summary
             
-            All integration tests have passed successfully on the `ci/cd` branch.
+            All integration tests have passed successfully on the `build-pipelines` branch.
             
             This PR proposes merging the validated changes into the `heroku-deployment` branch for deployment.
             
@@ -229,7 +227,7 @@ jobs:
             
             - Commit: ${{ github.sha }}
             - Workflow run: ${{ github.run_id }}
-          branch: ci-cd-to-heroku-deployment
+          branch: build-pipelines-to-heroku-deployment
           base: heroku-deployment
           labels: |
             automated-pr
